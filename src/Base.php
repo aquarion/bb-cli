@@ -45,6 +45,7 @@ class Base
      * @param  string $url
      * @param  array  $payload
      * @param  bool   $isRepositoryUrl
+     * @param  string|null $operationLabel
      * @return mixed
      * @throws \Exception
      * @see    https://developer.atlassian.com/cloud/bitbucket/rest
@@ -94,11 +95,14 @@ class Base
 
             if ($httpStatusCode === 403) {
                 $context = $operationLabel ? ' '.$operationLabel : '';
-                throw new \Exception(
-                    'Permission denied'.$context.'. Your API token may not have the required scope.'.PHP_EOL.
-                    'Check your token\'s permissions at: https://bitbucket.org/account/settings/api-tokens/',
-                    1
-                );
+                if (userConfig('auth.apiToken')) {
+                    $scopeMessage = 'Your API token may not have the required scope.'.PHP_EOL.
+                        'Check your token\'s permissions at: https://bitbucket.org/account/settings/api-tokens/';
+                } else {
+                    $scopeMessage = 'Your app password may not have the required permissions.'.PHP_EOL.
+                        'Check your app password permissions at: https://bitbucket.org/account/settings/app-passwords/';
+                }
+                throw new \Exception('Permission denied'.$context.'. '.$scopeMessage, 1);
             }
 
             $allowedStatuses = [409];
