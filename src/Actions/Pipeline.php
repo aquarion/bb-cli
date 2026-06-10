@@ -37,7 +37,7 @@ class Pipeline extends Base
      */
     public function get($pipeLineNumber, $return = false)
     {
-        $response = $this->makeRequest('GET', "/pipelines/{$pipeLineNumber}");
+        $response = $this->makeRequest('GET', "/pipelines/{$pipeLineNumber}", [], true, 'fetching pipeline');
 
         if ($return) {
             return $response;
@@ -106,7 +106,7 @@ class Pipeline extends Base
                 'type' => 'pipeline_ref_target',
                 'ref_name' => $branch
             ]
-        ]);
+        ], true, 'running pipeline');
 
         o($response);
     }
@@ -126,7 +126,7 @@ class Pipeline extends Base
                     'pattern' => $pipeline,
                 ],
             ]
-        ]);
+        ], true, 'running custom pipeline');
 
         $pipeLineNumber = $response['build_number'];
         $repoPath = getRepoPath();
@@ -144,6 +144,6 @@ class Pipeline extends Base
      */
     private function getLatestPipelineId()
     {
-        return $this->makeRequest('GET', '/pipelines/')['size'];
+        return $this->makeRequest('GET', '/pipelines/', [], true, 'fetching latest pipeline')['size'];
     }
 }
