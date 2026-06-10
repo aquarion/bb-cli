@@ -31,7 +31,7 @@ class Env extends Base
      */
     public function environments()
     {
-        $response = $this->makeRequest('GET', '/environments');
+        $response = $this->makeRequest('GET', '/environments', [], true, 'listing environments');
 
         foreach ($response['values'] as $env) {
             o(
@@ -49,7 +49,7 @@ class Env extends Base
      */
     public function variables($envUuid)
     {
-        $response = $this->makeRequest('GET', "/deployments_config/environments/$envUuid/variables");
+        $response = $this->makeRequest('GET', "/deployments_config/environments/$envUuid/variables", [], true, 'listing environment variables');
 
         foreach ($response['values'] as $var) {
             o(
@@ -73,7 +73,7 @@ class Env extends Base
             'key' => $key,
             'value' => $value,
             'secured' => (bool) $secured,
-        ]);
+        ], true, 'creating environment variable');
 
         $this->variableResponse($response);
     }
@@ -87,7 +87,7 @@ class Env extends Base
             'key' => $key,
             'value' => $value,
             'secured' => (bool) $secured,
-        ]);
+        ], true, 'updating environment variable');
 
         $this->variableResponse($response);
     }
