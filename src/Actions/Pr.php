@@ -45,14 +45,14 @@ class Pr extends Base
     {
         $result = [];
 
-        foreach ($this->makeRequest('GET', '/pullrequests?state=OPEN')['values'] as $prInfo) {
+        foreach ($this->makeRequest('GET', '/pullrequests?state=OPEN', [], true, 'listing pull requests')['values'] as $prInfo) {
             if (!empty($destination) &&
                 array_get($prInfo, 'destination.branch.name') !== $destination
             ) {
                 continue;
             }
 
-            $prDetail = $this->makeRequest('GET', "/pullrequests/{$prInfo['id']}");
+            $prDetail = $this->makeRequest('GET', "/pullrequests/{$prInfo['id']}", [], true, 'fetching pull request details');
 
             $result[] = [
                 'id' => $prInfo['id'],
@@ -92,7 +92,7 @@ class Pr extends Base
      */
     public function diff($prNumber)
     {
-        o($this->makeRequest('GET', "/pullrequests/{$prNumber}/diff"), 'yellow');
+        o($this->makeRequest('GET', "/pullrequests/{$prNumber}/diff", [], true, 'fetching pull request diff'), 'yellow');
     }
 
     /**
@@ -105,7 +105,7 @@ class Pr extends Base
      */
     public function files($prNumber)
     {
-        $response = array_get($this->makeRequest('GET', "/pullrequests/{$prNumber}/diffstat"), 'values');
+        $response = array_get($this->makeRequest('GET', "/pullrequests/{$prNumber}/diffstat", [], true, 'fetching pull request files'), 'values');
 
         foreach ($response as $row) {
             o(array_get($row, 'new.path'), 'yellow');
@@ -123,7 +123,7 @@ class Pr extends Base
     {
         $result = [];
 
-        foreach ($this->makeRequest('GET', "/pullrequests/{$prNumber}/commits")['values'] as $prInfo) {
+        foreach ($this->makeRequest('GET', "/pullrequests/{$prNumber}/commits", [], true, 'fetching pull request commits')['values'] as $prInfo) {
             $result[] = trim(str_replace('\n', PHP_EOL, array_get($prInfo, 'summary.raw')));
         }
 
@@ -148,7 +148,7 @@ class Pr extends Base
         if ($prNumbers[0] == 0) {
             $prNumbers = [];
 
-            foreach ($this->makeRequest('GET', '/pullrequests?state=OPEN')['values'] as $prInfo) {
+            foreach ($this->makeRequest('GET', '/pullrequests?state=OPEN', [], true, 'listing pull requests')['values'] as $prInfo) {
                 $prNumbers[] = $prInfo['id'];
             }
 
@@ -158,7 +158,7 @@ class Pr extends Base
         }
 
         foreach ($prNumbers as $prNumber) {
-            $this->makeRequest('POST', "/pullrequests/{$prNumber}/approve");
+            $this->makeRequest('POST', "/pullrequests/{$prNumber}/approve", [], true, 'approving pull request');
             o("{$prNumber} Approved.", 'green');
         }
     }
@@ -173,7 +173,7 @@ class Pr extends Base
      */
     public function unApprove($prNumber)
     {
-        o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/approve"));
+        o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/approve", [], true, 'removing pull request approval'));
     }
 
     /**
@@ -186,7 +186,7 @@ class Pr extends Base
      */
     public function requestChanges($prNumber)
     {
-        o($this->makeRequest('POST', "/pullrequests/{$prNumber}/request-changes"));
+        o($this->makeRequest('POST', "/pullrequests/{$prNumber}/request-changes", [], true, 'requesting changes on pull request'));
     }
 
     /**
@@ -199,7 +199,7 @@ class Pr extends Base
      */
     public function unRequestChanges($prNumber)
     {
-        o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/request-changes"));
+        o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/request-changes", [], true, 'removing pull request change request'));
     }
 
     /**
@@ -212,7 +212,7 @@ class Pr extends Base
      */
     public function decline($prNumber)
     {
-        $this->makeRequest('POST', "/pullrequests/{$prNumber}/decline");
+        $this->makeRequest('POST', "/pullrequests/{$prNumber}/decline", [], true, 'declining pull request');
         o('OK.', 'green');
     }
 
@@ -226,7 +226,7 @@ class Pr extends Base
      */
     public function merge($prNumber)
     {
-        o($this->makeRequest('POST', "/pullrequests/{$prNumber}/merge")['state'], 'green');
+        o($this->makeRequest('POST', "/pullrequests/{$prNumber}/merge", [], true, 'merging pull request')['state'], 'green');
     }
 
     /**
@@ -306,7 +306,7 @@ class Pr extends Base
                 $payload['description'] = $description;
             }
 
-            $response = $this->makeRequest('POST', '/pullrequests', $payload);
+            $response = $this->makeRequest('POST', '/pullrequests', $payload, true, 'creating pull request');
 
             $responses[] = [
                 'id' => array_get($response, 'id'),
@@ -329,7 +329,7 @@ class Pr extends Base
     private function defaultReviewers()
     {
         $currentUserUuid = $this->currentUserUuid();
-        $response = $this->makeRequest('GET', '/default-reviewers');
+        $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
 
         // remove current user from reviewers
         return array_values(array_filter($response['values'] ?? [], function ($reviewer) use ($currentUserUuid) {
@@ -350,7 +350,8 @@ class Pr extends Base
             'GET',
             '/user',
             [],
-            false
+            false,
+            'fetching current user'
         );
 
         return array_get($response, 'uuid');
