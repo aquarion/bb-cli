@@ -114,7 +114,10 @@ class PrDetails extends Base
         while ($page <= 100) { // Safety limit: max 100 pages = 10,000 comments
             $response = $this->makeRequest(
                 'GET',
-                "/pullrequests/{$prId}/comments?pagelen={$pagelen}&page={$page}"
+                "/pullrequests/{$prId}/comments?pagelen={$pagelen}&page={$page}",
+                [],
+                true,
+                'fetching pull request comments'
             );
 
             foreach ($response['values'] ?? [] as $comment) {

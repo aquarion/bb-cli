@@ -62,7 +62,7 @@ class Branch extends Base
     {
         $result = [];
 
-        $response = $this->makeRequest('GET', "/refs/branches?page={$page}");
+        $response = $this->makeRequest('GET', "/refs/branches?page={$page}", [], true, 'listing branches');
 
         foreach ($response['values'] as $branchInfo) {
             $branchName = $branchInfo['name'];
