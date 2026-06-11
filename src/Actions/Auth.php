@@ -41,10 +41,12 @@ class Auth extends Base
         o('This action requires a Bitbucket API token:', 'yellow');
         o('Create one at: https://bitbucket.org/account/settings/api-tokens/', 'green');
 
+        $email = getUserInput('Email address: ');
         $apiToken = getUserInput('API token: ');
 
         $saveToFile = userConfig([
             'auth' => [
+                'email'    => $email,
                 'apiToken' => $apiToken,
             ],
         ]);

@@ -63,8 +63,10 @@ class Base
         curl_setopt($ch, CURLOPT_URL, "https://api.bitbucket.org/2.0{$url}");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        if (userConfig('auth.apiToken')) {
-            $authHeader = 'Authorization: Bearer '.userConfig('auth.apiToken');
+        if (userConfig('auth.oauthToken')) {
+            $authHeader = 'Authorization: Bearer '.userConfig('auth.oauthToken');
+        } elseif (userConfig('auth.apiToken')) {
+            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
         } else {
             $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.username').':'.userConfig('auth.appPassword'));
         }
@@ -95,7 +97,9 @@ class Base
 
             if ($httpStatusCode === 403) {
                 $context = $operationLabel ? ' '.$operationLabel : '';
-                if (userConfig('auth.apiToken')) {
+                if (userConfig('auth.oauthToken')) {
+                    $scopeMessage = 'Your OAuth token may not have the required scope.';
+                } elseif (userConfig('auth.apiToken')) {
                     $scopeMessage = 'Your API token may not have the required scope.'.PHP_EOL.
                         'Check your token\'s permissions at: https://bitbucket.org/account/settings/api-tokens/';
                 } else {
@@ -176,7 +180,7 @@ class Base
             exit(1);
         }
 
-        if (userConfig('auth.appPassword') && !userConfig('auth.apiToken')) {
+        if (userConfig('auth.appPassword') && !userConfig('auth.apiToken') && !userConfig('auth.oauthToken')) {
             o('WARNING: You are using a legacy Bitbucket App Password config which will stop working on July 28, 2026.', 'yellow');
             o('Run "bb auth" to update your config to use an API token.', 'yellow');
             o('https://community.atlassian.com/forums/Bitbucket-articles/Deprecation-notice-Bitbucket-Cloud-app-password-brownout/ba-p/3237429', 'green');
