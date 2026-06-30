@@ -141,7 +141,9 @@ $userAction = $argv[2] ?? null;
 
 // Print help for action
 if (in_array($userAction, $staticCommands['help'])) {
-    o("bb {$userBaseAction} <subcommand> [args]", 'green');
+    $hasSubcommands = !empty($actionClass::AVAILABLE_COMMANDS);
+    $header = $hasSubcommands ? "bb {$userBaseAction} <subcommand> [args]" : "bb {$userBaseAction}";
+    o($header, 'green');
     o('', 'white');
     $commandDetails = defined(get_class($actionClass).'::COMMAND_DETAILS')
         ? $actionClass::COMMAND_DETAILS

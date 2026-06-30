@@ -96,7 +96,7 @@ class Base
             }
 
             if ($httpStatusCode === 403) {
-                $context = $operationLabel ? ' '.$operationLabel : '';
+                $context = $operationLabel ? ' while '.$operationLabel : '';
                 if (userConfig('auth.oauthToken')) {
                     $scopeMessage = 'Your OAuth token may not have the required scope.';
                 } elseif (userConfig('auth.apiToken')) {
