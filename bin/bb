@@ -141,9 +141,17 @@ $userAction = $argv[2] ?? null;
 
 // Print help for action
 if (in_array($userAction, $staticCommands['help'])) {
-    o('Available methods:', 'green');
-    foreach ($actionClass::AVAILABLE_COMMANDS as $command) {
-        o(implode(",\033[0;90m", explode(',', $command)), 'yellow');
+    o("bb {$userBaseAction} <subcommand> [args]", 'green');
+    o('', 'white');
+    $commandDetails = defined(get_class($actionClass).'::COMMAND_DETAILS')
+        ? $actionClass::COMMAND_DETAILS
+        : [];
+    foreach ($actionClass::AVAILABLE_COMMANDS as $method => $aliases) {
+        $aliasDisplay = implode(', ', array_map('trim', explode(',', $aliases)));
+        $args         = $commandDetails[$method]['args'] ?? '';
+        $description  = $commandDetails[$method]['description'] ?? '';
+        $usage        = $args ? "{$aliasDisplay} {$args}" : $aliasDisplay;
+        o(sprintf('  %-42s %s', $usage, $description), 'yellow');
     }
     exit(0);
 }
