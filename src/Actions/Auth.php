@@ -30,6 +30,13 @@ class Auth extends Base
         'show' => 'show',
     ];
 
+    const ACTION_DESCRIPTION = 'Manage Bitbucket authentication';
+
+    const COMMAND_DETAILS = [
+        'saveLoginInfo' => ['args' => '',  'description' => 'Save API token and email to config'],
+        'show'          => ['args' => '',  'description' => 'Show current authentication config'],
+    ];
+
     /**
      * It saves your user information in the config folder.
      * This is used in project (BB-CLI) process.

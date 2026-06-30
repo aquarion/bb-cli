@@ -26,6 +26,15 @@ class Env extends Base
         'updateVariable' => 'update-variable, u',
     ];
 
+    const ACTION_DESCRIPTION = 'Manage deployment environment variables';
+
+    const COMMAND_DETAILS = [
+        'environments'   => ['args' => '',                                         'description' => 'List deployment environments'],
+        'variables'      => ['args' => '<env-uuid>',                              'description' => 'List variables for an environment'],
+        'createVariable' => ['args' => '<env-uuid> <key> <value> [<secured>]',   'description' => 'Create an environment variable'],
+        'updateVariable' => ['args' => '<env-uuid> <var-uuid> <key> <value> [<secured>]', 'description' => 'Update an environment variable'],
+    ];
+
     /**
      * List Environments.
      */

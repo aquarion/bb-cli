@@ -23,6 +23,12 @@ class PrDetails extends Base
         'show' => 'show',
     ];
 
+    const ACTION_DESCRIPTION = 'Show pull request comments (inline and general)';
+
+    const COMMAND_DETAILS = [
+        'show' => ['args' => '[<pr>]', 'description' => 'Show pull request comments and details'],
+    ];
+
     /**
      * List pull request general and inline comments.
      *

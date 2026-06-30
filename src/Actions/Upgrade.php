@@ -21,6 +21,8 @@ class Upgrade extends Base
      */
     const DEFAULT_METHOD = 'index';
 
+    const ACTION_DESCRIPTION = 'Upgrade bb-cli to the latest version';
+
     /**
      * Upgrade.
      *

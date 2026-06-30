@@ -26,6 +26,14 @@ class Branch extends Base
         'name' => 'name, n',
     ];
 
+    const ACTION_DESCRIPTION = 'List and filter repository branches';
+
+    const COMMAND_DETAILS = [
+        'list' => ['args' => '[<user>] [<branch>]', 'description' => 'List branches, optionally filtered by author or name'],
+        'user' => ['args' => '<user>',              'description' => 'List branches filtered by author username'],
+        'name' => ['args' => '<branch>',            'description' => 'List branches filtered by name'],
+    ];
+
     /**
      * List branches that latest commit username contains "xyz".
      *

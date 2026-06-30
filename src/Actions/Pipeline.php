@@ -28,6 +28,16 @@ class Pipeline extends Base
         'custom' => 'custom, c',
     ];
 
+    const ACTION_DESCRIPTION = 'Trigger and monitor pipelines';
+
+    const COMMAND_DETAILS = [
+        'get'    => ['args' => '<pipeline>',           'description' => 'Show details of a pipeline'],
+        'latest' => ['args' => '',                     'description' => 'Show the latest pipeline'],
+        'wait'   => ['args' => '[<pipeline>]',         'description' => 'Wait for a pipeline to complete'],
+        'run'    => ['args' => '<branch>',             'description' => 'Run the default pipeline on a branch'],
+        'custom' => ['args' => '<branch> <pipeline>', 'description' => 'Run a named pipeline on a branch'],
+    ];
+
     /**
      * Gets details of given pipeline.
      *

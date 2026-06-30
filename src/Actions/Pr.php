@@ -35,6 +35,23 @@ class Pr extends Base
         'show' => 'show',
     ];
 
+    const ACTION_DESCRIPTION = 'Manage pull requests';
+
+    const COMMAND_DETAILS = [
+        'list'             => ['args' => '[<destination>]',       'description' => 'List open pull requests'],
+        'diff'             => ['args' => '<pr>',                  'description' => 'Show diff for a pull request'],
+        'files'            => ['args' => '<pr>',                  'description' => 'List files changed in a pull request'],
+        'commits'          => ['args' => '<pr>',                  'description' => 'List commits in a pull request'],
+        'approve'          => ['args' => '<pr> [<pr>...]',        'description' => 'Approve one or more pull requests'],
+        'unApprove'        => ['args' => '<pr>',                  'description' => 'Remove your approval from a pull request'],
+        'requestChanges'   => ['args' => '<pr>',                  'description' => 'Request changes on a pull request'],
+        'unRequestChanges' => ['args' => '<pr>',                  'description' => 'Remove your request-changes from a pull request'],
+        'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
+        'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
+        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request'],
+        'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
+    ];
+
     /**
      * List pull request for repository.
      *
