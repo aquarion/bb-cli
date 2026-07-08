@@ -59,10 +59,12 @@ $staticCommands = [
     ],
 ];
 
-// Check for --project, --title and --description arguments and extract them
+// Check for --project, --title, --description, --destination and --reviewers arguments and extract them
 $projectUrl = null;
 $prTitle = null;
 $prDescription = null;
+$prDestination = null;
+$prReviewers = null;
 $interactive = false;
 $filteredArgv = [];
 for ($i = 0; $i < count($argv); $i++) {
@@ -74,6 +76,12 @@ for ($i = 0; $i < count($argv); $i++) {
         $i++;
     } elseif ($argv[$i] === '--description' && isset($argv[$i + 1])) {
         $prDescription = $argv[$i + 1];
+        $i++;
+    } elseif ($argv[$i] === '--destination' && isset($argv[$i + 1])) {
+        $prDestination = $argv[$i + 1];
+        $i++;
+    } elseif ($argv[$i] === '--reviewers' && isset($argv[$i + 1])) {
+        $prReviewers = $argv[$i + 1];
         $i++;
     } elseif ($argv[$i] === '-i' || $argv[$i] === '--interactive') {
         $interactive = true;
@@ -88,12 +96,18 @@ if ($projectUrl) {
     $GLOBALS['bb_cli_project_url'] = $projectUrl;
 }
 
-// Set global PR title and description for use in Pr::create()
+// Set global PR fields for use in Pr::create() and Pr::edit()
 if ($prTitle) {
     $GLOBALS['bb_cli_pr_title'] = $prTitle;
 }
 if ($prDescription) {
     $GLOBALS['bb_cli_pr_description'] = $prDescription;
+}
+if ($prDestination) {
+    $GLOBALS['bb_cli_pr_destination'] = $prDestination;
+}
+if ($prReviewers) {
+    $GLOBALS['bb_cli_pr_reviewers'] = $prReviewers;
 }
 if ($interactive) {
     $GLOBALS['bb_cli_interactive'] = true;
@@ -120,8 +134,10 @@ if (is_null($userBaseAction) || in_array($userBaseAction, $staticCommands['help'
     o('Global options:', 'green');
     o('  --project <repo>         Work with repository (e.g., --project "owner/repo" or --project "https://bitbucket.org/owner/repo")', 'yellow');
     o('  -i, --interactive        Enable interactive mode (e.g., prompt for PR title and description)', 'yellow');
-    o('  --title <title>          Set PR title (used with pr create)', 'yellow');
-    o('  --description <desc>     Set PR description (used with pr create)', 'yellow');
+    o('  --title <title>          Set PR title (used with pr create, pr edit)', 'yellow');
+    o('  --description <desc>     Set PR description (used with pr create, pr edit)', 'yellow');
+    o('  --destination <branch>   Set PR destination branch (used with pr edit)', 'yellow');
+    o('  --reviewers <names>      Set PR reviewers, comma-separated usernames or UUIDs (used with pr edit)', 'yellow');
     exit(0);
 }
 
