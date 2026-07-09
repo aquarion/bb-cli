@@ -405,16 +405,22 @@ class Pr extends Base
                 continue;
             }
 
+            // Bitbucket deprecated nickname lookups via GET /users/{username} in April 2019
+            // (GDPR). Resolve nicknames via the workspace members endpoint instead, which
+            // supports an exact-match filter on user.nickname.
+            $workspace = explode('/', getRepoPath())[0];
+            $query = rawurlencode("user.nickname=\"{$entry}\"");
+
             try {
-                $response = $this->makeRequest('GET', "/users/{$entry}", [], false, "resolving reviewer '{$entry}'");
+                $response = $this->makeRequest('GET', "/workspaces/{$workspace}/members?q={$query}", [], false, "resolving reviewer '{$entry}'");
             } catch (\Exception $e) {
                 throw new \Exception("Could not resolve reviewer '{$entry}': {$e->getMessage()}", 1);
             }
 
-            $uuid = array_get($response, 'uuid');
+            $uuid = array_get($response, 'values.0.user.uuid');
 
             if (empty($uuid)) {
-                throw new \Exception("Could not resolve reviewer '{$entry}': no uuid returned.", 1);
+                throw new \Exception("Could not resolve reviewer '{$entry}': no matching workspace member found.", 1);
             }
 
             $reviewers[] = ['uuid' => $uuid];
