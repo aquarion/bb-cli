@@ -32,6 +32,7 @@ class Pr extends Base
         'decline' => 'decline',
         'merge' => 'merge, m',
         'create' => 'create',
+        'edit' => 'edit, e',
         'show' => 'show',
     ];
 
@@ -49,6 +50,7 @@ class Pr extends Base
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
         'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request'],
+        'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
     ];
 
