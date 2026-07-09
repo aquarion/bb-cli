@@ -424,6 +424,72 @@ class Pr extends Base
     }
 
     /**
+     * Edit an existing pull request's title, description, destination, or reviewers.
+     *
+     * Only fields supplied via --title/--description/--destination/--reviewers
+     * are changed; Bitbucket's PUT /pullrequests/{id} leaves omitted fields
+     * untouched.
+     *
+     * @param int $prNumber
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function edit($prNumber)
+    {
+        $title = $GLOBALS['bb_cli_pr_title'] ?? null;
+        $description = $GLOBALS['bb_cli_pr_description'] ?? null;
+        $destination = $GLOBALS['bb_cli_pr_destination'] ?? null;
+        $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
+
+        $payload = $this->buildEditPayload($title, $description, $destination, $reviewers);
+
+        if (empty($payload)) {
+            throw new \Exception('No changes provided. Use --title, --description, --destination, --reviewers, or -i.', 1);
+        }
+
+        $response = $this->makeRequest('PUT', "/pullrequests/{$prNumber}", $payload, true, 'updating pull request');
+
+        o([
+            'id' => array_get($response, 'id'),
+            'title' => array_get($response, 'title'),
+            'destination' => array_get($response, 'destination.branch.name'),
+            'link' => array_get($response, 'links.html.href'),
+        ], 'green');
+    }
+
+    /**
+     * Build the PUT payload for pr edit from provided (non-null) fields only.
+     *
+     * @param string|null $title
+     * @param string|null $description
+     * @param string|null $destination
+     * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
+     * @return array
+     *
+     * @throws \Exception
+     */
+    private function buildEditPayload($title, $description, $destination, $reviewers)
+    {
+        $payload = [];
+
+        if (!is_null($title)) {
+            $payload['title'] = $title;
+        }
+        if (!is_null($description)) {
+            $payload['description'] = $description;
+        }
+        if (!is_null($destination)) {
+            $payload['destination'] = ['branch' => ['name' => $destination]];
+        }
+        if (!is_null($reviewers)) {
+            $payload['reviewers'] = $this->resolveReviewers($reviewers);
+        }
+
+        return $payload;
+    }
+
+    /**
      * List pull request general and inline comments.
      *
      * Delegates to PrDetails action class to keep Pr focused on lifecycle operations.
