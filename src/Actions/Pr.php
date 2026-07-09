@@ -442,6 +442,16 @@ class Pr extends Base
         $destination = $GLOBALS['bb_cli_pr_destination'] ?? null;
         $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
 
+        if (!empty($GLOBALS['bb_cli_interactive'])) {
+            list($title, $description, $destination, $reviewers) = $this->promptForEditFields(
+                $prNumber,
+                $title,
+                $description,
+                $destination,
+                $reviewers
+            );
+        }
+
         $payload = $this->buildEditPayload($title, $description, $destination, $reviewers);
 
         if (empty($payload)) {
@@ -487,6 +497,49 @@ class Pr extends Base
         }
 
         return $payload;
+    }
+
+    /**
+     * Prompt for any pr edit field not already supplied via flags.
+     *
+     * Fetches the current pull request so prompts can show existing values.
+     * A blank answer leaves that field unset (unchanged).
+     *
+     * @param int $prNumber
+     * @param string|null $title
+     * @param string|null $description
+     * @param string|null $destination
+     * @param string|null $reviewers
+     * @return array [$title, $description, $destination, $reviewers]
+     *
+     * @throws \Exception
+     */
+    private function promptForEditFields($prNumber, $title, $description, $destination, $reviewers)
+    {
+        $current = $this->makeRequest('GET', "/pullrequests/{$prNumber}", [], true, 'fetching pull request details');
+
+        if (is_null($title)) {
+            $currentTitle = array_get($current, 'title', '');
+            $title = getUserInput("New title (current: \"{$currentTitle}\"), leave empty to keep:") ?: null;
+        }
+
+        if (is_null($description)) {
+            $description = getUserInput('New description, leave empty to keep:') ?: null;
+        }
+
+        if (is_null($destination)) {
+            $currentDestination = array_get($current, 'destination.branch.name', '');
+            $destination = getUserInput("New destination branch (current: \"{$currentDestination}\"), leave empty to keep:") ?: null;
+        }
+
+        if (is_null($reviewers)) {
+            $currentReviewers = implode(', ', array_map(function ($reviewer) {
+                return array_get($reviewer, 'nickname') ?: array_get($reviewer, 'display_name', '');
+            }, array_get($current, 'reviewers', [])));
+            $reviewers = getUserInput("New reviewers (current: {$currentReviewers}), comma separated, leave empty to keep:") ?: null;
+        }
+
+        return [$title, $description, $destination, $reviewers];
     }
 
     /**
