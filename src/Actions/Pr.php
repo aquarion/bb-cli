@@ -381,7 +381,8 @@ class Pr extends Base
      *
      * Entries that already look like a UUID (braced or unbraced) are used
      * as-is with no API call. Everything else is treated as a nickname and
-     * resolved via the Users API.
+     * resolved via an exact-match lookup against the repository's
+     * workspace members.
      *
      * @param string $namesCsv
      * @return array
