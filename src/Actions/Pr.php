@@ -377,6 +377,53 @@ class Pr extends Base
     }
 
     /**
+     * Resolve reviewer identifiers (nicknames or UUIDs) to Bitbucket account UUIDs.
+     *
+     * Entries that already look like a UUID (braced or unbraced) are used
+     * as-is with no API call. Everything else is treated as a nickname and
+     * resolved via the Users API.
+     *
+     * @param string $namesCsv
+     * @return array
+     *
+     * @throws \Exception
+     */
+    private function resolveReviewers($namesCsv)
+    {
+        $uuidPattern = '/^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$/i';
+        $reviewers = [];
+
+        foreach (explode(',', $namesCsv) as $entry) {
+            $entry = trim($entry);
+
+            if ($entry === '') {
+                continue;
+            }
+
+            if (preg_match($uuidPattern, $entry)) {
+                $reviewers[] = ['uuid' => '{'.trim($entry, '{}').'}'];
+                continue;
+            }
+
+            try {
+                $response = $this->makeRequest('GET', "/users/{$entry}", [], false, "resolving reviewer '{$entry}'");
+            } catch (\Exception $e) {
+                throw new \Exception("Could not resolve reviewer '{$entry}': {$e->getMessage()}", 1);
+            }
+
+            $uuid = array_get($response, 'uuid');
+
+            if (empty($uuid)) {
+                throw new \Exception("Could not resolve reviewer '{$entry}': no uuid returned.", 1);
+            }
+
+            $reviewers[] = ['uuid' => $uuid];
+        }
+
+        return $reviewers;
+    }
+
+    /**
      * List pull request general and inline comments.
      *
      * Delegates to PrDetails action class to keep Pr focused on lifecycle operations.
