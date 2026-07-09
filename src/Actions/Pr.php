@@ -516,6 +516,10 @@ class Pr extends Base
      */
     private function promptForEditFields($prNumber, $title, $description, $destination, $reviewers)
     {
+        if (!is_null($title) && !is_null($description) && !is_null($destination) && !is_null($reviewers)) {
+            return [$title, $description, $destination, $reviewers];
+        }
+
         $current = $this->makeRequest('GET', "/pullrequests/{$prNumber}", [], true, 'fetching pull request details');
 
         if (is_null($title)) {
