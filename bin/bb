@@ -110,13 +110,18 @@ if (in_array($userBaseAction, $staticCommands['version'])) {
 // Print help
 if (is_null($userBaseAction) || in_array($userBaseAction, $staticCommands['help'])) {
     o('Available actions:', 'green');
-    o(array_keys($actions), 'green');
+    foreach ($actions as $name => $className) {
+        $description = defined("{$className}::ACTION_DESCRIPTION") ? $className::ACTION_DESCRIPTION : '';
+        o(sprintf('  %-14s %s', $name, $description), 'yellow');
+    }
+    o('', 'white');
+    o('Use "bb <action> --help" for subcommand details.', 'white');
     o('', 'white');
     o('Global options:', 'green');
     o('  --project <repo>         Work with repository (e.g., --project "owner/repo" or --project "https://bitbucket.org/owner/repo")', 'yellow');
-    o('  -i, --interactive         Enable interactive mode (e.g., prompt for PR title and description)', 'yellow');
-    o('  --title <title>           Set PR title (used with pr create)', 'yellow');
-    o('  --description <desc>      Set PR description (used with pr create)', 'yellow');
+    o('  -i, --interactive        Enable interactive mode (e.g., prompt for PR title and description)', 'yellow');
+    o('  --title <title>          Set PR title (used with pr create)', 'yellow');
+    o('  --description <desc>     Set PR description (used with pr create)', 'yellow');
     exit(0);
 }
 
@@ -136,9 +141,19 @@ $userAction = $argv[2] ?? null;
 
 // Print help for action
 if (in_array($userAction, $staticCommands['help'])) {
-    o('Available methods:', 'green');
-    foreach ($actionClass::AVAILABLE_COMMANDS as $command) {
-        o(implode(",\033[0;90m", explode(',', $command)), 'yellow');
+    $hasSubcommands = !empty($actionClass::AVAILABLE_COMMANDS);
+    $header = $hasSubcommands ? "bb {$userBaseAction} <subcommand> [args]" : "bb {$userBaseAction}";
+    o($header, 'green');
+    o('', 'white');
+    $commandDetails = defined(get_class($actionClass).'::COMMAND_DETAILS')
+        ? $actionClass::COMMAND_DETAILS
+        : [];
+    foreach ($actionClass::AVAILABLE_COMMANDS as $method => $aliases) {
+        $aliasDisplay = implode(', ', array_map('trim', explode(',', $aliases)));
+        $args         = $commandDetails[$method]['args'] ?? '';
+        $description  = $commandDetails[$method]['description'] ?? '';
+        $usage        = $args ? "{$aliasDisplay} {$args}" : $aliasDisplay;
+        o(sprintf('  %-42s %s', $usage, $description), 'yellow');
     }
     exit(0);
 }

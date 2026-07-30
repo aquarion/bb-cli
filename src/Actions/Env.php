@@ -26,12 +26,21 @@ class Env extends Base
         'updateVariable' => 'update-variable, u',
     ];
 
+    const ACTION_DESCRIPTION = 'Manage deployment environment variables';
+
+    const COMMAND_DETAILS = [
+        'environments'   => ['args' => '',                                         'description' => 'List deployment environments'],
+        'variables'      => ['args' => '<env-uuid>',                              'description' => 'List variables for an environment'],
+        'createVariable' => ['args' => '<env-uuid> <key> <value> [<secured>]',   'description' => 'Create an environment variable'],
+        'updateVariable' => ['args' => '<env-uuid> <var-uuid> <key> <value> [<secured>]', 'description' => 'Update an environment variable'],
+    ];
+
     /**
      * List Environments.
      */
     public function environments()
     {
-        $response = $this->makeRequest('GET', '/environments');
+        $response = $this->makeRequest('GET', '/environments', [], true, 'listing environments');
 
         foreach ($response['values'] as $env) {
             o(
@@ -49,7 +58,7 @@ class Env extends Base
      */
     public function variables($envUuid)
     {
-        $response = $this->makeRequest('GET', "/deployments_config/environments/$envUuid/variables");
+        $response = $this->makeRequest('GET', "/deployments_config/environments/$envUuid/variables", [], true, 'listing environment variables');
 
         foreach ($response['values'] as $var) {
             o(
@@ -73,7 +82,7 @@ class Env extends Base
             'key' => $key,
             'value' => $value,
             'secured' => (bool) $secured,
-        ]);
+        ], true, 'creating environment variable');
 
         $this->variableResponse($response);
     }
@@ -87,7 +96,7 @@ class Env extends Base
             'key' => $key,
             'value' => $value,
             'secured' => (bool) $secured,
-        ]);
+        ], true, 'updating environment variable');
 
         $this->variableResponse($response);
     }

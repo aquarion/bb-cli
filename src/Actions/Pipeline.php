@@ -28,6 +28,16 @@ class Pipeline extends Base
         'custom' => 'custom, c',
     ];
 
+    const ACTION_DESCRIPTION = 'Trigger and monitor pipelines';
+
+    const COMMAND_DETAILS = [
+        'get'    => ['args' => '<pipeline>',           'description' => 'Show details of a pipeline'],
+        'latest' => ['args' => '',                     'description' => 'Show the latest pipeline'],
+        'wait'   => ['args' => '[<pipeline>]',         'description' => 'Wait for a pipeline to complete'],
+        'run'    => ['args' => '<branch>',             'description' => 'Run the default pipeline on a branch'],
+        'custom' => ['args' => '<branch> <pipeline>', 'description' => 'Run a named pipeline on a branch'],
+    ];
+
     /**
      * Gets details of given pipeline.
      *
@@ -37,7 +47,7 @@ class Pipeline extends Base
      */
     public function get($pipeLineNumber, $return = false)
     {
-        $response = $this->makeRequest('GET', "/pipelines/{$pipeLineNumber}");
+        $response = $this->makeRequest('GET', "/pipelines/{$pipeLineNumber}", [], true, 'fetching pipeline');
 
         if ($return) {
             return $response;
@@ -106,7 +116,7 @@ class Pipeline extends Base
                 'type' => 'pipeline_ref_target',
                 'ref_name' => $branch
             ]
-        ]);
+        ], true, 'running pipeline');
 
         o($response);
     }
@@ -126,7 +136,7 @@ class Pipeline extends Base
                     'pattern' => $pipeline,
                 ],
             ]
-        ]);
+        ], true, 'running custom pipeline');
 
         $pipeLineNumber = $response['build_number'];
         $repoPath = getRepoPath();
@@ -144,6 +154,6 @@ class Pipeline extends Base
      */
     private function getLatestPipelineId()
     {
-        return $this->makeRequest('GET', '/pipelines/')['size'];
+        return $this->makeRequest('GET', '/pipelines/', [], true, 'fetching latest pipeline')['size'];
     }
 }

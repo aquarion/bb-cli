@@ -24,6 +24,13 @@ class Browse extends Base
         'show' => 'show, url',
     ];
 
+    const ACTION_DESCRIPTION = 'Open or display the repository URL';
+
+    const COMMAND_DETAILS = [
+        'browse' => ['args' => '', 'description' => 'Open repository in browser'],
+        'show'   => ['args' => '', 'description' => 'Print repository URL'],
+    ];
+
     /**
      * Open browser for current repository
      *

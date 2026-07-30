@@ -30,6 +30,13 @@ class Auth extends Base
         'show' => 'show',
     ];
 
+    const ACTION_DESCRIPTION = 'Manage Bitbucket authentication';
+
+    const COMMAND_DETAILS = [
+        'saveLoginInfo' => ['args' => '',  'description' => 'Save API token and email to config'],
+        'show'          => ['args' => '',  'description' => 'Show current authentication config'],
+    ];
+
     /**
      * It saves your user information in the config folder.
      * This is used in project (BB-CLI) process.
@@ -38,17 +45,21 @@ class Auth extends Base
      */
     public function saveLoginInfo()
     {
-        o('This action requires app password:', 'yellow');
-        o('If you don\'t have a app password you may create by following this link:', 'yellow');
-        o('https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/', 'green');
+        o('This action requires a Bitbucket API token:', 'yellow');
+        o('Create one at: https://bitbucket.org/account/settings/api-tokens/', 'green');
 
-        $username = getUserInput('Username: ');
-        $appPassword = getUserInput('App password: ');
+        $email = trim(getUserInput('Email address: '));
+        $apiToken = trim(getUserInput('API token: '));
+
+        if ($email === '' || $apiToken === '') {
+            o('No input received - auth not changed. Run this in an interactive terminal, or check `bb auth show` for current status.', 'red');
+            exit(1);
+        }
 
         $saveToFile = userConfig([
             'auth' => [
-                'username' => $username,
-                'appPassword' => $appPassword,
+                'email'    => $email,
+                'apiToken' => $apiToken,
             ],
         ]);
 

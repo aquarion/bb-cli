@@ -45,11 +45,12 @@ class Base
      * @param  string $url
      * @param  array  $payload
      * @param  bool   $isRepositoryUrl
+     * @param  string|null $operationLabel
      * @return mixed
      * @throws \Exception
      * @see    https://developer.atlassian.com/cloud/bitbucket/rest
      */
-    public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true)
+    public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null)
     {
         $this->checkAuth();
 
@@ -62,9 +63,16 @@ class Base
         curl_setopt($ch, CURLOPT_URL, "https://api.bitbucket.org/2.0{$url}");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        if (userConfig('auth.oauthToken')) {
+            $authHeader = 'Authorization: Bearer '.userConfig('auth.oauthToken');
+        } elseif (userConfig('auth.apiToken')) {
+            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
+        } else {
+            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.username').':'.userConfig('auth.appPassword'));
+        }
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: Basic '.base64_encode(userConfig('auth.username').':'.userConfig('auth.appPassword')),
+            $authHeader,
         ]);
 
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
@@ -87,14 +95,26 @@ class Base
                 throw new \Exception('Authorization error, please check your credentials.', 1);
             }
 
+            if ($httpStatusCode === 403) {
+                $context = $operationLabel ? ' while '.$operationLabel : '';
+                if (userConfig('auth.oauthToken')) {
+                    $scopeMessage = 'Your OAuth token may not have the required scope.';
+                } elseif (userConfig('auth.apiToken')) {
+                    $scopeMessage = 'Your API token may not have the required scope.'.PHP_EOL.
+                        'Check your token\'s permissions at: https://bitbucket.org/account/settings/api-tokens/';
+                } else {
+                    $scopeMessage = 'Your app password may not have the required permissions.'.PHP_EOL.
+                        'Check your app password permissions at: https://bitbucket.org/account/settings/app-passwords/';
+                }
+                throw new \Exception('Permission denied'.$context.'. '.$scopeMessage, 1);
+            }
+
             $allowedStatuses = [409];
             if (!in_array($httpStatusCode, $allowedStatuses)) {
                 o($result);
                 throw new \Exception('An error occurred, status code: '.$httpStatusCode, 1);
             }
         }
-
-        curl_close($ch);
 
         $jsonResult = json_decode($result, true);
 
@@ -156,6 +176,12 @@ class Base
             o('You have to configure auth info to use this command.', 'red');
             o('Run "bb auth" first.', 'yellow');
             exit(1);
+        }
+
+        if (userConfig('auth.appPassword') && !userConfig('auth.apiToken') && !userConfig('auth.oauthToken')) {
+            o('WARNING: You are using a legacy Bitbucket App Password config which will stop working on July 28, 2026.', 'yellow');
+            o('Run "bb auth" to update your config to use an API token.', 'yellow');
+            o('https://community.atlassian.com/forums/Bitbucket-articles/Deprecation-notice-Bitbucket-Cloud-app-password-brownout/ba-p/3237429', 'green');
         }
     }
 }
