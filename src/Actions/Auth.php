@@ -48,8 +48,13 @@ class Auth extends Base
         o('This action requires a Bitbucket API token:', 'yellow');
         o('Create one at: https://bitbucket.org/account/settings/api-tokens/', 'green');
 
-        $email = getUserInput('Email address: ');
-        $apiToken = getUserInput('API token: ');
+        $email = trim(getUserInput('Email address: '));
+        $apiToken = trim(getUserInput('API token: '));
+
+        if ($email === '' || $apiToken === '') {
+            o('No input received - auth not changed. Run this in an interactive terminal, or check `bb auth show` for current status.', 'red');
+            exit(1);
+        }
 
         $saveToFile = userConfig([
             'auth' => [
