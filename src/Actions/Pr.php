@@ -32,6 +32,7 @@ class Pr extends Base
         'decline' => 'decline',
         'merge' => 'merge, m',
         'create' => 'create',
+        'edit' => 'edit, e',
         'show' => 'show',
     ];
 
@@ -49,6 +50,7 @@ class Pr extends Base
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
         'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request'],
+        'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
     ];
 
@@ -372,6 +374,183 @@ class Pr extends Base
         );
 
         return array_get($response, 'uuid');
+    }
+
+    /**
+     * Resolve reviewer identifiers (nicknames or UUIDs) to Bitbucket account UUIDs.
+     *
+     * Entries that already look like a UUID (braced or unbraced) are used
+     * as-is with no API call. Everything else is treated as a nickname and
+     * resolved via an exact-match lookup against the repository's
+     * workspace members.
+     *
+     * @param string $namesCsv
+     * @return array
+     *
+     * @throws \Exception
+     */
+    private function resolveReviewers($namesCsv)
+    {
+        $uuidPattern = '/^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$/i';
+        $reviewers = [];
+
+        foreach (explode(',', $namesCsv) as $entry) {
+            $entry = trim($entry);
+
+            if ($entry === '') {
+                continue;
+            }
+
+            if (preg_match($uuidPattern, $entry)) {
+                $reviewers[] = ['uuid' => '{'.trim($entry, '{}').'}'];
+                continue;
+            }
+
+            // Bitbucket deprecated nickname lookups via GET /users/{username} in April 2019
+            // (GDPR). Resolve nicknames via the workspace members endpoint instead, which
+            // supports an exact-match filter on user.nickname.
+            $workspace = explode('/', getRepoPath())[0];
+            $query = rawurlencode("user.nickname=\"{$entry}\"");
+
+            try {
+                $response = $this->makeRequest('GET', "/workspaces/{$workspace}/members?q={$query}", [], false, "resolving reviewer '{$entry}'");
+            } catch (\Exception $e) {
+                throw new \Exception("Could not resolve reviewer '{$entry}': {$e->getMessage()}", 1);
+            }
+
+            $uuid = array_get($response, 'values.0.user.uuid');
+
+            if (empty($uuid)) {
+                throw new \Exception("Could not resolve reviewer '{$entry}': no matching workspace member found.", 1);
+            }
+
+            $reviewers[] = ['uuid' => $uuid];
+        }
+
+        return $reviewers;
+    }
+
+    /**
+     * Edit an existing pull request's title, description, destination, or reviewers.
+     *
+     * Only fields supplied via --title/--description/--destination/--reviewers
+     * are changed; Bitbucket's PUT /pullrequests/{id} leaves omitted fields
+     * untouched.
+     *
+     * @param int $prNumber
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function edit($prNumber)
+    {
+        $title = $GLOBALS['bb_cli_pr_title'] ?? null;
+        $description = $GLOBALS['bb_cli_pr_description'] ?? null;
+        $destination = $GLOBALS['bb_cli_pr_destination'] ?? null;
+        $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
+
+        if (!empty($GLOBALS['bb_cli_interactive'])) {
+            list($title, $description, $destination, $reviewers) = $this->promptForEditFields(
+                $prNumber,
+                $title,
+                $description,
+                $destination,
+                $reviewers
+            );
+        }
+
+        $payload = $this->buildEditPayload($title, $description, $destination, $reviewers);
+
+        if (empty($payload)) {
+            throw new \Exception('No changes provided. Use --title, --description, --destination, --reviewers, or -i.', 1);
+        }
+
+        $response = $this->makeRequest('PUT', "/pullrequests/{$prNumber}", $payload, true, 'updating pull request');
+
+        o([
+            'id' => array_get($response, 'id'),
+            'title' => array_get($response, 'title'),
+            'destination' => array_get($response, 'destination.branch.name'),
+            'link' => array_get($response, 'links.html.href'),
+        ], 'green');
+    }
+
+    /**
+     * Build the PUT payload for pr edit from provided (non-null) fields only.
+     *
+     * @param string|null $title
+     * @param string|null $description
+     * @param string|null $destination
+     * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
+     * @return array
+     *
+     * @throws \Exception
+     */
+    private function buildEditPayload($title, $description, $destination, $reviewers)
+    {
+        $payload = [];
+
+        if (!is_null($title)) {
+            $payload['title'] = $title;
+        }
+        if (!is_null($description)) {
+            $payload['description'] = $description;
+        }
+        if (!is_null($destination)) {
+            $payload['destination'] = ['branch' => ['name' => $destination]];
+        }
+        if (!is_null($reviewers)) {
+            $payload['reviewers'] = $this->resolveReviewers($reviewers);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Prompt for any pr edit field not already supplied via flags.
+     *
+     * Fetches the current pull request so prompts can show existing values.
+     * A blank answer leaves that field unset (unchanged).
+     *
+     * @param int $prNumber
+     * @param string|null $title
+     * @param string|null $description
+     * @param string|null $destination
+     * @param string|null $reviewers
+     * @return array [$title, $description, $destination, $reviewers]
+     *
+     * @throws \Exception
+     */
+    private function promptForEditFields($prNumber, $title, $description, $destination, $reviewers)
+    {
+        if (!is_null($title) && !is_null($description) && !is_null($destination) && !is_null($reviewers)) {
+            return [$title, $description, $destination, $reviewers];
+        }
+
+        $current = $this->makeRequest('GET', "/pullrequests/{$prNumber}", [], true, 'fetching pull request details');
+
+        if (is_null($title)) {
+            $currentTitle = array_get($current, 'title', '');
+            $title = getUserInput("New title (current: \"{$currentTitle}\"), leave empty to keep:") ?: null;
+        }
+
+        if (is_null($description)) {
+            $description = getUserInput('New description, leave empty to keep:') ?: null;
+        }
+
+        if (is_null($destination)) {
+            $currentDestination = array_get($current, 'destination.branch.name', '');
+            $destination = getUserInput("New destination branch (current: \"{$currentDestination}\"), leave empty to keep:") ?: null;
+        }
+
+        if (is_null($reviewers)) {
+            $currentReviewers = implode(', ', array_map(function ($reviewer) {
+                return array_get($reviewer, 'nickname') ?: array_get($reviewer, 'display_name', '');
+            }, array_get($current, 'reviewers', [])));
+            $reviewers = getUserInput("New reviewers (current: {$currentReviewers}), comma separated, leave empty to keep:") ?: null;
+        }
+
+        return [$title, $description, $destination, $reviewers];
     }
 
     /**
