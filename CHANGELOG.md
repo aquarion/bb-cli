@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
   Usage: bb pr ready <pr_id>
 - A PHPUnit test suite covering the helpers, `Base`, every action class, the
   `bin/bb` command line, the curl transport and the phar build, plus a
-  `Tests` GitHub Actions workflow running it on PHP 8.2, 8.3 and 8.4.
+  `Tests` GitHub Actions workflow running it on PHP 8.2, 8.3, 8.4 and 8.5.
   Run it with `composer install && composer test`.
 
 ### Change
