@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 ### Add
 - `bb pr show` command for viewing PR comments with inline code comment support
   Usage: bb pr show <pr_id> [limit] [unresolved]
+- `--reviewers` is now honoured by `bb pr create`, accepting comma-separated
+  nicknames and/or UUIDs. When it is omitted, the PR still falls back to the
+  repository's default reviewers.
+  Usage: bb pr create <from> [<to>] --reviewers alice,bob
+- `--draft` flag for `bb pr create`, opening the pull request as a draft.
+  Usage: bb pr create <from> [<to>] --draft
+- `bb pr ready` command for marking a draft pull request ready for review.
+  Usage: bb pr ready <pr_id>
+
+### Change
+- Default reviewers are now read from `/effective-default-reviewers`, so
+  reviewers inherited from the repository's project are included alongside
+  repository-level ones. Falls back to `/default-reviewers` if unavailable.
 
 ---
 

@@ -33,6 +33,7 @@ class Pr extends Base
         'merge' => 'merge, m',
         'create' => 'create',
         'edit' => 'edit, e',
+        'ready' => 'ready',
         'show' => 'show',
     ];
 
@@ -49,8 +50,9 @@ class Pr extends Base
         'unRequestChanges' => ['args' => '<pr>',                  'description' => 'Remove your request-changes from a pull request'],
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
-        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request'],
+        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request (default reviewers unless --reviewers given, --draft for a draft)'],
         'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
+        'ready'            => ['args' => '<pr>',                  'description' => 'Mark a draft pull request as ready for review'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
     ];
 
@@ -251,6 +253,10 @@ class Pr extends Base
     /**
      * Create pull request from "x" to test "y".
      *
+     * Reviewers come from --reviewers when supplied, otherwise from the
+     * repository's effective default reviewers. Pass --draft to open the
+     * pull request as a draft.
+     *
      * @param string $fromBranch
      * @param string $toBranch
      * @param int $addDefaultReviewers
@@ -268,6 +274,8 @@ class Pr extends Base
         $interactive = !empty($GLOBALS['bb_cli_interactive']);
         $title = $GLOBALS['bb_cli_pr_title'] ?? null;
         $description = $GLOBALS['bb_cli_pr_description'] ?? null;
+        $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
+        $draft = !empty($GLOBALS['bb_cli_pr_draft']);
 
         if ($interactive) {
             if (!$title) {
@@ -276,6 +284,9 @@ class Pr extends Base
             if (!$description) {
                 $description = getUserInput('PR description (leave empty to skip):') ?: null;
             }
+            if (!$reviewers) {
+                $reviewers = getUserInput('PR reviewers, comma separated (leave empty for default reviewers):') ?: null;
+            }
         }
 
         $this->bulkCreate(
@@ -283,7 +294,9 @@ class Pr extends Base
             $fromBranch,
             $addDefaultReviewers == 1,
             $title,
-            $description
+            $description,
+            $reviewers,
+            $draft
         );
     }
 
@@ -295,15 +308,21 @@ class Pr extends Base
      * @param bool $addDefaultReviewers
      * @param string|null $title
      * @param string|null $description
+     * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
+     * @param bool $draft Open the pull request as a draft.
      * @return void
      *
      * @throws \Exception
      */
-    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null)
+    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null, $draft = false)
     {
         $responses = [];
 
-        $defaultReviewers = $addDefaultReviewers ? $this->defaultReviewers() : [];
+        if (!is_null($reviewers)) {
+            $prReviewers = $this->resolveReviewers($reviewers);
+        } else {
+            $prReviewers = $addDefaultReviewers ? $this->defaultReviewers() : [];
+        }
 
         foreach ($toBranches as $toBranch) {
             $payload = [
@@ -318,11 +337,15 @@ class Pr extends Base
                         'name' => $toBranch,
                     ],
                 ],
-                'reviewers' => $defaultReviewers,
+                'reviewers' => $prReviewers,
             ];
 
             if ($description) {
                 $payload['description'] = $description;
+            }
+
+            if ($draft) {
+                $payload['draft'] = true;
             }
 
             $response = $this->makeRequest('POST', '/pullrequests', $payload, true, 'creating pull request');
@@ -339,7 +362,13 @@ class Pr extends Base
     }
 
     /**
-     * Get default reviewers for repository.
+     * Get the effective default reviewers for the repository.
+     *
+     * Uses /effective-default-reviewers so that reviewers inherited from the
+     * repository's project are included alongside repository-level ones. That
+     * endpoint wraps each account in a `user` key, unlike /default-reviewers,
+     * which returns bare account objects. If it is unavailable, fall back to
+     * the repository-only endpoint.
      *
      * @return array
      *
@@ -348,11 +377,20 @@ class Pr extends Base
     private function defaultReviewers()
     {
         $currentUserUuid = $this->currentUserUuid();
-        $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
+
+        try {
+            $response = $this->makeRequest('GET', '/effective-default-reviewers', [], true, 'fetching default reviewers');
+            $reviewers = array_map(function ($reviewer) {
+                return array_get($reviewer, 'user', []);
+            }, $response['values'] ?? []);
+        } catch (\Exception $e) {
+            $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
+            $reviewers = $response['values'] ?? [];
+        }
 
         // remove current user from reviewers
-        return array_values(array_filter($response['values'] ?? [], function ($reviewer) use ($currentUserUuid) {
-            return $reviewer['uuid'] !== $currentUserUuid;
+        return array_values(array_filter($reviewers, function ($reviewer) use ($currentUserUuid) {
+            return !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid;
         }));
     }
 
@@ -471,6 +509,36 @@ class Pr extends Base
             'id' => array_get($response, 'id'),
             'title' => array_get($response, 'title'),
             'destination' => array_get($response, 'destination.branch.name'),
+            'link' => array_get($response, 'links.html.href'),
+        ], 'green');
+    }
+
+    /**
+     * Mark a draft pull request as ready for review.
+     *
+     * Clearing the `draft` flag is an ordinary PUT /pullrequests/{id} update,
+     * which leaves every omitted field untouched. Running it against a pull
+     * request that is already ready is a harmless no-op.
+     *
+     * @param int $prNumber
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function ready($prNumber)
+    {
+        $response = $this->makeRequest(
+            'PUT',
+            "/pullrequests/{$prNumber}",
+            ['draft' => false],
+            true,
+            'marking pull request ready for review'
+        );
+
+        o([
+            'id' => array_get($response, 'id'),
+            'title' => array_get($response, 'title'),
+            'draft' => array_get($response, 'draft') ? 'yes' : 'no',
             'link' => array_get($response, 'links.html.href'),
         ], 'green');
     }
