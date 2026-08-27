@@ -173,10 +173,20 @@ class Base
             exit(1);
         }
 
-        if (userConfig('auth.appPassword') && !userConfig('auth.apiToken') && !userConfig('auth.oauthToken')) {
-            o('Bitbucket App Passwords are no longer supported (Bitbucket retired them on July 28, 2026).', 'red');
-            o('Run "bb auth" to configure an API token.', 'yellow');
-            exit(1);
+        if (userConfig('auth.oauthToken')) {
+            return;
         }
+
+        if (userConfig('auth.email') && userConfig('auth.apiToken')) {
+            return;
+        }
+
+        if (userConfig('auth.appPassword')) {
+            o('Bitbucket App Passwords are no longer supported (Bitbucket retired them on July 28, 2026).', 'red');
+        } else {
+            o('Your auth config is missing an email/API token.', 'red');
+        }
+        o('Run "bb auth" to configure an API token.', 'yellow');
+        exit(1);
     }
 }
