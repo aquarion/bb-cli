@@ -30,35 +30,17 @@ class Upgrade extends Base
      */
     public function index()
     {
-        $opts = [
-            'http' => [
-                'method' => 'GET',
-                'header' => "User-Agent: BB-Cli Curl Agent\r\n",
-                'follow_location' => true,
-            ],
-        ];
-
-        $context = stream_context_create($opts);
-
-        $repo = json_decode(
-            file_get_contents(
-                'https://api.github.com/repos/bb-cli/bb-cli/releases/latest',
-                false,
-                $context
-            )
-        );
+        $repo = $this->fetchLatestRelease();
 
         if (APP_VERSION < $repo->tag_name) {
-            $runningFile = \Phar::running(false);
+            $runningFile = $this->runningFile();
 
             o('Fetching new version ('.$repo->tag_name.') ...', 'green');
 
             file_put_contents(
                 $runningFile,
-                file_get_contents(
-                    sprintf('https://github.com/bb-cli/bb-cli/releases/download/%s/bb', $repo->tag_name),
-                    false,
-                    $context
+                $this->fetchRemote(
+                    sprintf('https://github.com/bb-cli/bb-cli/releases/download/%s/bb', $repo->tag_name)
                 )
             );
 
@@ -68,5 +50,48 @@ class Upgrade extends Base
         } else {
             o('You are already on the latest version of bb-cli', 'green');
         }
+    }
+
+    /**
+     * Fetch the latest release metadata from GitHub.
+     *
+     * Isolated so the network call can be replaced in tests.
+     *
+     * @return object
+     */
+    protected function fetchLatestRelease()
+    {
+        return json_decode(
+            $this->fetchRemote('https://api.github.com/repos/bb-cli/bb-cli/releases/latest')
+        );
+    }
+
+    /**
+     * Fetch a remote url with the bb-cli user agent.
+     *
+     * @param  string $url
+     * @return string|false
+     */
+    protected function fetchRemote($url)
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "User-Agent: BB-Cli Curl Agent\r\n",
+                'follow_location' => true,
+            ],
+        ]);
+
+        return file_get_contents($url, false, $context);
+    }
+
+    /**
+     * Path of the phar currently being executed.
+     *
+     * @return string
+     */
+    protected function runningFile()
+    {
+        return \Phar::running(false);
     }
 }
