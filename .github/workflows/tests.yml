@@ -57,11 +57,9 @@ jobs:
           php -l create-phar.php
           find src tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
 
+      # HttpTransportTest talks to a PHP built-in server on loopback; hosted
+      # runners have no proxy configured, so no NO_PROXY handling is needed.
       - name: Run tests
-        # HttpTransportTest talks to a PHP built-in server on loopback.
-        env:
-          NO_PROXY: 127.0.0.1,localhost
-          no_proxy: 127.0.0.1,localhost
         run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
 
       - name: Upload coverage report
