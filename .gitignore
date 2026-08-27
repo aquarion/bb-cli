@@ -5,3 +5,6 @@
 /bb.phar
 /docs/superpowers
 /graphify-out
+/.phpunit.cache
+/.phpunit.result.cache
+/coverage.xml

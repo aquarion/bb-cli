@@ -15,8 +15,25 @@ All notable changes to this project will be documented in this file.
   Usage: bb pr create <from> [<to>] --draft
 - `bb pr ready` command for marking a draft pull request ready for review.
   Usage: bb pr ready <pr_id>
+- A PHPUnit test suite covering the helpers, `Base`, every action class, the
+  `bin/bb` command line, the curl transport and the phar build, plus a
+  `Tests` GitHub Actions workflow running it on PHP 8.2, 8.3, 8.4 and 8.5.
+  Run it with `composer install && composer test`.
+
+### Fix
+- `create-phar.php` no longer walks the whole build checkout. It listed the
+  files to ship with a directory walk filtered by a regex that matched any
+  path containing "src", "config" or "phar-index.php", which pulled
+  `.git/config` — and with it the build machine's remote url — into the
+  released binary, and made the build fail outright if git touched its object
+  store while the walk was in progress. The files are now listed explicitly
+  from `src/` and `config/`, so nothing outside them is read or shipped.
 
 ### Change
+- `Base::makeRequest()` now performs its HTTP call through a protected
+  `executeRequest()` method, and `Upgrade` fetches releases through protected
+  `fetchLatestRelease()`/`fetchRemote()` methods, so the network layer can be
+  replaced in tests. Behaviour is unchanged.
 - Default reviewers are now read from `/effective-default-reviewers`, so
   reviewers inherited from the repository's project are included alongside
   repository-level ones. Falls back to `/default-reviewers` if unavailable.

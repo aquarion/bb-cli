@@ -31,6 +31,11 @@ class Base
     const CHECK_GIT_FOLDER = true;
 
     /**
+     * Base url of the Bitbucket Cloud REST API.
+     */
+    const API_BASE_URL = 'https://api.bitbucket.org/2.0';
+
+    /**
      * Construct
      */
     public function __construct()
@@ -59,34 +64,15 @@ class Base
             $url = "/repositories/{$repoPath}{$url}";
         }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.bitbucket.org/2.0{$url}");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        if (userConfig('auth.oauthToken')) {
-            $authHeader = 'Authorization: Bearer '.userConfig('auth.oauthToken');
-        } else {
-            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
-        }
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            $authHeader,
-        ]);
+        $response = $this->executeRequest($method, self::API_BASE_URL.$url, $payload);
 
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-
-        if ($method !== 'GET') {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        }
-
-        $result = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            o('Error:' . curl_error($ch));
+        if ($response['error'] !== null) {
+            o('Error:' . $response['error']);
             die;
         }
 
-        $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $result = $response['body'];
+        $httpStatusCode = $response['status'];
 
         if ($httpStatusCode < 200 || $httpStatusCode > 299) {
             if ($httpStatusCode === 401) {
@@ -122,6 +108,67 @@ class Base
         }
 
         return $jsonResult;
+    }
+
+    /**
+     * Builds the Authorization header for the configured credentials.
+     *
+     * An OAuth token is sent as a Bearer token; otherwise the API token is
+     * sent as HTTP Basic auth in the "email:apiToken" form Bitbucket expects.
+     *
+     * @return string
+     */
+    protected function buildAuthHeader()
+    {
+        if (userConfig('auth.oauthToken')) {
+            return 'Authorization: Bearer '.userConfig('auth.oauthToken');
+        }
+
+        return 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
+    }
+
+    /**
+     * Performs the HTTP request.
+     *
+     * Isolated from makeRequest() so the transport can be replaced in tests.
+     *
+     * @param  string $method
+     * @param  string $url    Fully qualified request url.
+     * @param  array  $payload
+     * @return array  ['body' => string|bool, 'status' => int, 'error' => string|null]
+     */
+    protected function executeRequest($method, $url, $payload = [])
+    {
+        // Normalise once, so the no-body-on-GET rule below cannot disagree with
+        // the method curl is actually asked to send.
+        $method = strtoupper($method);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            $this->buildAuthHeader(),
+        ]);
+
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+
+        if ($method !== 'GET') {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        }
+
+        $body = curl_exec($ch);
+        $error = curl_errno($ch) ? curl_error($ch) : null;
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
+
+        return [
+            'body' => $body,
+            'status' => $status,
+            'error' => $error,
+        ];
     }
 
     /**
@@ -165,7 +212,7 @@ class Base
      *
      * @return void
      */
-    private function checkAuth()
+    protected function checkAuth()
     {
         if (!userConfig('auth')) {
             o('You have to configure auth info to use this command.', 'red');

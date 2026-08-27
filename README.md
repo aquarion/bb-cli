@@ -40,6 +40,35 @@ Then use `bb help` and `bb auth` as expected in the documentation.
 
 This tool developed with help of [Github Copilot](https://copilot.github.com) :octocat: - 2021
 
+### Running the tests
+
+The test suite uses [PHPUnit](https://phpunit.de) and is the only thing that
+needs Composer — `bb` itself still ships as a dependency-free phar.
+
+```shell
+composer install
+composer test          # or: vendor/bin/phpunit
+```
+
+Useful variations:
+
+```shell
+vendor/bin/phpunit --testsuite unit        # fast, in-process tests
+vendor/bin/phpunit --testsuite functional  # runs bin/bb and builds the phar
+vendor/bin/phpunit --filter PrCreateTest   # a single test class
+```
+
+The suite makes no network calls and never touches your real
+`~/.bitbucket-rest-cli-config.json`: every test runs against a throwaway `HOME`
+containing a fixture config.
+
+Layout:
+
+| Path | What it covers |
+| --- | --- |
+| `tests/Unit` | Helpers, `Base` request/response handling, and every action's behaviour with the HTTP call replaced |
+| `tests/Functional` | `bin/bb` run as a real command, the curl transport against a local HTTP server, the `readline()` prompt helper, and the phar build |
+
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE) for more information.
