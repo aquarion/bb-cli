@@ -21,6 +21,13 @@ All notable changes to this project will be documented in this file.
   reviewers inherited from the repository's project are included alongside
   repository-level ones. Falls back to `/default-reviewers` if unavailable.
 
+### Remove
+- Legacy Bitbucket App Password authentication support, now that Bitbucket
+  has fully retired app passwords (July 28, 2026). A config containing only
+  `username`/`appPassword` now fails with a clear error directing users to
+  run `bb auth` and configure an API token, instead of sending a bogus
+  auth header.
+
 ---
 
 ## [1.0.2] - 2024-02-21
