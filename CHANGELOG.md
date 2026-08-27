@@ -20,6 +20,15 @@ All notable changes to this project will be documented in this file.
   `Tests` GitHub Actions workflow running it on PHP 8.2, 8.3, 8.4 and 8.5.
   Run it with `composer install && composer test`.
 
+### Fix
+- `create-phar.php` no longer walks the whole build checkout. It listed the
+  files to ship with a directory walk filtered by a regex that matched any
+  path containing "src", "config" or "phar-index.php", which pulled
+  `.git/config` — and with it the build machine's remote url — into the
+  released binary, and made the build fail outright if git touched its object
+  store while the walk was in progress. The files are now listed explicitly
+  from `src/` and `config/`, so nothing outside them is read or shipped.
+
 ### Change
 - `Base::makeRequest()` now performs its HTTP call through a protected
   `executeRequest()` method, and `Upgrade` fetches releases through protected

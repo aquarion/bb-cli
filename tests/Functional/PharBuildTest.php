@@ -108,6 +108,26 @@ class PharBuildTest extends TestCase
         }
     }
 
+    public function testThePharDoesNotShipTheGitDirectory(): void
+    {
+        // A directory walk over the build checkout used to match .git/config
+        // and ship the build machine's remote url inside the released binary.
+        foreach ($this->pharEntries() as $entry) {
+            $this->assertStringStartsNotWith('/.git', $entry, "{$entry} should not be in the release phar.");
+        }
+    }
+
+    public function testEveryPharEntryIsARuntimeSourceFile(): void
+    {
+        foreach ($this->pharEntries() as $entry) {
+            $this->assertMatchesRegularExpression(
+                '#^(/src/.+\.php|/config/.+\.php|/phar-index\.php)$#',
+                $entry,
+                "{$entry} is neither a source file, a config file, nor the entrypoint."
+            );
+        }
+    }
+
     /**
      * Paths inside the built phar, relative to its root.
      *
