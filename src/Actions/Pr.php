@@ -49,7 +49,7 @@ class Pr extends Base
         'unRequestChanges' => ['args' => '<pr>',                  'description' => 'Remove your request-changes from a pull request'],
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
-        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request'],
+        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request (default reviewers unless --reviewers given)'],
         'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
     ];
@@ -251,6 +251,9 @@ class Pr extends Base
     /**
      * Create pull request from "x" to test "y".
      *
+     * Reviewers come from --reviewers when supplied, otherwise from the
+     * repository's effective default reviewers.
+     *
      * @param string $fromBranch
      * @param string $toBranch
      * @param int $addDefaultReviewers
@@ -268,6 +271,7 @@ class Pr extends Base
         $interactive = !empty($GLOBALS['bb_cli_interactive']);
         $title = $GLOBALS['bb_cli_pr_title'] ?? null;
         $description = $GLOBALS['bb_cli_pr_description'] ?? null;
+        $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
 
         if ($interactive) {
             if (!$title) {
@@ -276,6 +280,9 @@ class Pr extends Base
             if (!$description) {
                 $description = getUserInput('PR description (leave empty to skip):') ?: null;
             }
+            if (!$reviewers) {
+                $reviewers = getUserInput('PR reviewers, comma separated (leave empty for default reviewers):') ?: null;
+            }
         }
 
         $this->bulkCreate(
@@ -283,7 +290,8 @@ class Pr extends Base
             $fromBranch,
             $addDefaultReviewers == 1,
             $title,
-            $description
+            $description,
+            $reviewers
         );
     }
 
@@ -295,15 +303,20 @@ class Pr extends Base
      * @param bool $addDefaultReviewers
      * @param string|null $title
      * @param string|null $description
+     * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
      * @return void
      *
      * @throws \Exception
      */
-    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null)
+    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null)
     {
         $responses = [];
 
-        $defaultReviewers = $addDefaultReviewers ? $this->defaultReviewers() : [];
+        if (!is_null($reviewers)) {
+            $prReviewers = $this->resolveReviewers($reviewers);
+        } else {
+            $prReviewers = $addDefaultReviewers ? $this->defaultReviewers() : [];
+        }
 
         foreach ($toBranches as $toBranch) {
             $payload = [
@@ -318,7 +331,7 @@ class Pr extends Base
                         'name' => $toBranch,
                     ],
                 ],
-                'reviewers' => $defaultReviewers,
+                'reviewers' => $prReviewers,
             ];
 
             if ($description) {
@@ -339,7 +352,13 @@ class Pr extends Base
     }
 
     /**
-     * Get default reviewers for repository.
+     * Get the effective default reviewers for the repository.
+     *
+     * Uses /effective-default-reviewers so that reviewers inherited from the
+     * repository's project are included alongside repository-level ones. That
+     * endpoint wraps each account in a `user` key, unlike /default-reviewers,
+     * which returns bare account objects. If it is unavailable, fall back to
+     * the repository-only endpoint.
      *
      * @return array
      *
@@ -348,11 +367,20 @@ class Pr extends Base
     private function defaultReviewers()
     {
         $currentUserUuid = $this->currentUserUuid();
-        $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
+
+        try {
+            $response = $this->makeRequest('GET', '/effective-default-reviewers', [], true, 'fetching default reviewers');
+            $reviewers = array_map(function ($reviewer) {
+                return array_get($reviewer, 'user', []);
+            }, $response['values'] ?? []);
+        } catch (\Exception $e) {
+            $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
+            $reviewers = $response['values'] ?? [];
+        }
 
         // remove current user from reviewers
-        return array_values(array_filter($response['values'] ?? [], function ($reviewer) use ($currentUserUuid) {
-            return $reviewer['uuid'] !== $currentUserUuid;
+        return array_values(array_filter($reviewers, function ($reviewer) use ($currentUserUuid) {
+            return !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid;
         }));
     }
 

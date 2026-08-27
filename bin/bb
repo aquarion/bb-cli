@@ -137,7 +137,7 @@ if (is_null($userBaseAction) || in_array($userBaseAction, $staticCommands['help'
     o('  --title <title>          Set PR title (used with pr create, pr edit)', 'yellow');
     o('  --description <desc>     Set PR description (used with pr create, pr edit)', 'yellow');
     o('  --destination <branch>   Set PR destination branch (used with pr edit)', 'yellow');
-    o('  --reviewers <names>      Set PR reviewers, comma-separated usernames or UUIDs (used with pr edit)', 'yellow');
+    o('  --reviewers <names>      Set PR reviewers, comma-separated usernames or UUIDs (used with pr create, pr edit)', 'yellow');
     exit(0);
 }
 
