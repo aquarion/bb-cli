@@ -59,12 +59,13 @@ $staticCommands = [
     ],
 ];
 
-// Check for --project, --title, --description, --destination and --reviewers arguments and extract them
+// Check for --project, --title, --description, --destination, --reviewers and --draft arguments and extract them
 $projectUrl = null;
 $prTitle = null;
 $prDescription = null;
 $prDestination = null;
 $prReviewers = null;
+$draft = false;
 $interactive = false;
 $filteredArgv = [];
 for ($i = 0; $i < count($argv); $i++) {
@@ -83,6 +84,8 @@ for ($i = 0; $i < count($argv); $i++) {
     } elseif ($argv[$i] === '--reviewers' && isset($argv[$i + 1])) {
         $prReviewers = $argv[$i + 1];
         $i++;
+    } elseif ($argv[$i] === '--draft') {
+        $draft = true;
     } elseif ($argv[$i] === '-i' || $argv[$i] === '--interactive') {
         $interactive = true;
     } else {
@@ -108,6 +111,9 @@ if ($prDestination) {
 }
 if ($prReviewers) {
     $GLOBALS['bb_cli_pr_reviewers'] = $prReviewers;
+}
+if ($draft) {
+    $GLOBALS['bb_cli_pr_draft'] = true;
 }
 if ($interactive) {
     $GLOBALS['bb_cli_interactive'] = true;
@@ -138,6 +144,7 @@ if (is_null($userBaseAction) || in_array($userBaseAction, $staticCommands['help'
     o('  --description <desc>     Set PR description (used with pr create, pr edit)', 'yellow');
     o('  --destination <branch>   Set PR destination branch (used with pr edit)', 'yellow');
     o('  --reviewers <names>      Set PR reviewers, comma-separated usernames or UUIDs (used with pr create, pr edit)', 'yellow');
+    o('  --draft                  Create the PR as a draft (used with pr create; see "bb pr ready" to undraft)', 'yellow');
     exit(0);
 }
 

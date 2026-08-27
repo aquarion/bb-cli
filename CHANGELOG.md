@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   nicknames and/or UUIDs. When it is omitted, the PR still falls back to the
   repository's default reviewers.
   Usage: bb pr create <from> [<to>] --reviewers alice,bob
+- `--draft` flag for `bb pr create`, opening the pull request as a draft.
+  Usage: bb pr create <from> [<to>] --draft
+- `bb pr ready` command for marking a draft pull request ready for review.
+  Usage: bb pr ready <pr_id>
 
 ### Change
 - Default reviewers are now read from `/effective-default-reviewers`, so

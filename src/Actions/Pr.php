@@ -33,6 +33,7 @@ class Pr extends Base
         'merge' => 'merge, m',
         'create' => 'create',
         'edit' => 'edit, e',
+        'ready' => 'ready',
         'show' => 'show',
     ];
 
@@ -49,8 +50,9 @@ class Pr extends Base
         'unRequestChanges' => ['args' => '<pr>',                  'description' => 'Remove your request-changes from a pull request'],
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
-        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request (default reviewers unless --reviewers given)'],
+        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request (default reviewers unless --reviewers given, --draft for a draft)'],
         'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
+        'ready'            => ['args' => '<pr>',                  'description' => 'Mark a draft pull request as ready for review'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
     ];
 
@@ -252,7 +254,8 @@ class Pr extends Base
      * Create pull request from "x" to test "y".
      *
      * Reviewers come from --reviewers when supplied, otherwise from the
-     * repository's effective default reviewers.
+     * repository's effective default reviewers. Pass --draft to open the
+     * pull request as a draft.
      *
      * @param string $fromBranch
      * @param string $toBranch
@@ -272,6 +275,7 @@ class Pr extends Base
         $title = $GLOBALS['bb_cli_pr_title'] ?? null;
         $description = $GLOBALS['bb_cli_pr_description'] ?? null;
         $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
+        $draft = !empty($GLOBALS['bb_cli_pr_draft']);
 
         if ($interactive) {
             if (!$title) {
@@ -291,7 +295,8 @@ class Pr extends Base
             $addDefaultReviewers == 1,
             $title,
             $description,
-            $reviewers
+            $reviewers,
+            $draft
         );
     }
 
@@ -304,11 +309,12 @@ class Pr extends Base
      * @param string|null $title
      * @param string|null $description
      * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
+     * @param bool $draft Open the pull request as a draft.
      * @return void
      *
      * @throws \Exception
      */
-    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null)
+    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null, $draft = false)
     {
         $responses = [];
 
@@ -336,6 +342,10 @@ class Pr extends Base
 
             if ($description) {
                 $payload['description'] = $description;
+            }
+
+            if ($draft) {
+                $payload['draft'] = true;
             }
 
             $response = $this->makeRequest('POST', '/pullrequests', $payload, true, 'creating pull request');
@@ -499,6 +509,36 @@ class Pr extends Base
             'id' => array_get($response, 'id'),
             'title' => array_get($response, 'title'),
             'destination' => array_get($response, 'destination.branch.name'),
+            'link' => array_get($response, 'links.html.href'),
+        ], 'green');
+    }
+
+    /**
+     * Mark a draft pull request as ready for review.
+     *
+     * Clearing the `draft` flag is an ordinary PUT /pullrequests/{id} update,
+     * which leaves every omitted field untouched. Running it against a pull
+     * request that is already ready is a harmless no-op.
+     *
+     * @param int $prNumber
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function ready($prNumber)
+    {
+        $response = $this->makeRequest(
+            'PUT',
+            "/pullrequests/{$prNumber}",
+            ['draft' => false],
+            true,
+            'marking pull request ready for review'
+        );
+
+        o([
+            'id' => array_get($response, 'id'),
+            'title' => array_get($response, 'title'),
+            'draft' => array_get($response, 'draft') ? 'yes' : 'no',
             'link' => array_get($response, 'links.html.href'),
         ], 'green');
     }
