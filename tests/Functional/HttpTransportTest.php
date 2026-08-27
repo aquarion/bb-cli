@@ -145,6 +145,14 @@ class HttpTransportTest extends TestCase
         $this->assertSame('', $echo['body']);
     }
 
+    public function testDoesNotSendABodyOnALowercaseGetRequest(): void
+    {
+        $echo = json_decode($this->request('get', '/echo', ['ignored' => true])['body'], true);
+
+        $this->assertSame('GET', $echo['method']);
+        $this->assertSame('', $echo['body'], 'The GET check must not depend on the caller\'s casing.');
+    }
+
     public function testSendsAPutBody(): void
     {
         $echo = json_decode($this->request('PUT', '/echo', ['draft' => false])['body'], true);

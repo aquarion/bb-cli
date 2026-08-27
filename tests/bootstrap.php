@@ -6,8 +6,8 @@
  * helpers.php guards every function with function_exists(), so the doubles
  * defined here take precedence over the real implementations for the whole
  * suite. Only interactive/terminal-bound helpers are doubled; the real ones
- * are still exercised in HelpersSubprocessTest, which runs them in a child
- * process with a real stdin.
+ * are still exercised in tests/Functional/UserInputHelperTest.php, which runs
+ * them in a child process with a real stdin.
  */
 
 /**

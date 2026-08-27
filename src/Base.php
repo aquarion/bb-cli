@@ -139,6 +139,10 @@ class Base
      */
     protected function executeRequest($method, $url, $payload = [])
     {
+        // Normalise once, so the no-body-on-GET rule below cannot disagree with
+        // the method curl is actually asked to send.
+        $method = strtoupper($method);
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -148,7 +152,7 @@ class Base
             $this->buildAuthHeader(),
         ]);
 
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 
         if ($method !== 'GET') {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
