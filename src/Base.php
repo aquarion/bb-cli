@@ -183,8 +183,12 @@ class Base
 
         if (userConfig('auth.appPassword')) {
             o('Bitbucket App Passwords are no longer supported (Bitbucket retired them on July 28, 2026).', 'red');
+        } elseif (!userConfig('auth.email') && !userConfig('auth.apiToken')) {
+            o('Your auth config is missing an email address and API token.', 'red');
+        } elseif (!userConfig('auth.email')) {
+            o('Your auth config is missing an email address.', 'red');
         } else {
-            o('Your auth config is missing an email/API token.', 'red');
+            o('Your auth config is missing an API token.', 'red');
         }
         o('Run "bb auth" to configure an API token.', 'yellow');
         exit(1);

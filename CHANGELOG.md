@@ -26,7 +26,10 @@ All notable changes to this project will be documented in this file.
   has fully retired app passwords (July 28, 2026). A config containing only
   `username`/`appPassword` now fails with a clear error directing users to
   run `bb auth` and configure an API token, instead of sending a bogus
-  auth header.
+  auth header. Any other incomplete auth config (e.g. an `email` set
+  without a matching `apiToken`, or vice versa) now fails the same way,
+  naming the missing field, rather than silently sending an empty-credential
+  Basic auth header.
 
 ---
 
