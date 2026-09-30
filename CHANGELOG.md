@@ -15,11 +15,20 @@ All notable changes to this project will be documented in this file.
   Usage: bb pr create <from> [<to>] --draft
 - `bb pr ready` command for marking a draft pull request ready for review.
   Usage: bb pr ready <pr_id>
+- `bb pr create` with no branches now opens a PR from the current branch into
+  the repository's development branch (from its branching model, falling back
+  to the main branch).
+  Usage: bb pr create
+- `bb pr create` without `--description` now uses the source branch's
+  `.bitbucket/pull_request_template.md`, as the web UI does.
 
 ### Change
 - Default reviewers are now read from `/effective-default-reviewers`, so
   reviewers inherited from the repository's project are included alongside
   repository-level ones. Falls back to `/default-reviewers` if unavailable.
+- `bb pr create` now sets "delete source branch after merge" from the
+  repository's branching model setting, then the project's, instead of always
+  leaving it off. The API doesn't apply this default itself.
 
 ---
 
