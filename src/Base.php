@@ -31,6 +31,11 @@ class Base
     const CHECK_GIT_FOLDER = true;
 
     /**
+     * Base url of the Bitbucket Cloud REST API.
+     */
+    const API_BASE_URL = 'https://api.bitbucket.org/2.0';
+
+    /**
      * Construct
      */
     public function __construct()
@@ -61,36 +66,15 @@ class Base
             $url = "/repositories/{$repoPath}{$url}";
         }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://api.bitbucket.org/2.0{$url}");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        if (userConfig('auth.oauthToken')) {
-            $authHeader = 'Authorization: Bearer '.userConfig('auth.oauthToken');
-        } elseif (userConfig('auth.apiToken')) {
-            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
-        } else {
-            $authHeader = 'Authorization: Basic '.base64_encode(userConfig('auth.username').':'.userConfig('auth.appPassword'));
-        }
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            $authHeader,
-        ]);
+        $response = $this->executeRequest($method, self::API_BASE_URL.$url, $payload);
 
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
-
-        if ($method !== 'GET') {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        }
-
-        $result = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            o('Error:' . curl_error($ch));
+        if ($response['error'] !== null) {
+            o('Error:' . $response['error']);
             die;
         }
 
-        $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $result = $response['body'];
+        $httpStatusCode = $response['status'];
 
         if ($httpStatusCode < 200 || $httpStatusCode > 299) {
             if ($httpStatusCode === 401) {
@@ -101,12 +85,9 @@ class Base
                 $context = $operationLabel ? ' while '.$operationLabel : '';
                 if (userConfig('auth.oauthToken')) {
                     $scopeMessage = 'Your OAuth token may not have the required scope.';
-                } elseif (userConfig('auth.apiToken')) {
+                } else {
                     $scopeMessage = 'Your API token may not have the required scope.'.PHP_EOL.
                         'Check your token\'s permissions at: https://bitbucket.org/account/settings/api-tokens/';
-                } else {
-                    $scopeMessage = 'Your app password may not have the required permissions.'.PHP_EOL.
-                        'Check your app password permissions at: https://bitbucket.org/account/settings/app-passwords/';
                 }
                 throw new \Exception('Permission denied'.$context.'. '.$scopeMessage, 1);
             }
@@ -133,6 +114,67 @@ class Base
         }
 
         return $jsonResult;
+    }
+
+    /**
+     * Builds the Authorization header for the configured credentials.
+     *
+     * An OAuth token is sent as a Bearer token; otherwise the API token is
+     * sent as HTTP Basic auth in the "email:apiToken" form Bitbucket expects.
+     *
+     * @return string
+     */
+    protected function buildAuthHeader()
+    {
+        if (userConfig('auth.oauthToken')) {
+            return 'Authorization: Bearer '.userConfig('auth.oauthToken');
+        }
+
+        return 'Authorization: Basic '.base64_encode(userConfig('auth.email').':'.userConfig('auth.apiToken'));
+    }
+
+    /**
+     * Performs the HTTP request.
+     *
+     * Isolated from makeRequest() so the transport can be replaced in tests.
+     *
+     * @param  string $method
+     * @param  string $url    Fully qualified request url.
+     * @param  array  $payload
+     * @return array  ['body' => string|bool, 'status' => int, 'error' => string|null]
+     */
+    protected function executeRequest($method, $url, $payload = [])
+    {
+        // Normalise once, so the no-body-on-GET rule below cannot disagree with
+        // the method curl is actually asked to send.
+        $method = strtoupper($method);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            $this->buildAuthHeader(),
+        ]);
+
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+
+        if ($method !== 'GET') {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        }
+
+        $body = curl_exec($ch);
+        $error = curl_errno($ch) ? curl_error($ch) : null;
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
+
+        return [
+            'body' => $body,
+            'status' => $status,
+            'error' => $error,
+        ];
     }
 
     /**
@@ -176,7 +218,7 @@ class Base
      *
      * @return void
      */
-    private function checkAuth()
+    protected function checkAuth()
     {
         if (!userConfig('auth')) {
             o('You have to configure auth info to use this command.', 'red');
@@ -184,10 +226,24 @@ class Base
             exit(1);
         }
 
-        if (userConfig('auth.appPassword') && !userConfig('auth.apiToken') && !userConfig('auth.oauthToken')) {
-            o('WARNING: You are using a legacy Bitbucket App Password config which will stop working on July 28, 2026.', 'yellow');
-            o('Run "bb auth" to update your config to use an API token.', 'yellow');
-            o('https://community.atlassian.com/forums/Bitbucket-articles/Deprecation-notice-Bitbucket-Cloud-app-password-brownout/ba-p/3237429', 'green');
+        if (userConfig('auth.oauthToken')) {
+            return;
         }
+
+        if (userConfig('auth.email') && userConfig('auth.apiToken')) {
+            return;
+        }
+
+        if (userConfig('auth.appPassword')) {
+            o('Bitbucket App Passwords are no longer supported (Bitbucket retired them on July 28, 2026).', 'red');
+        } elseif (!userConfig('auth.email') && !userConfig('auth.apiToken')) {
+            o('Your auth config is missing an email address and API token.', 'red');
+        } elseif (!userConfig('auth.email')) {
+            o('Your auth config is missing an email address.', 'red');
+        } else {
+            o('Your auth config is missing an API token.', 'red');
+        }
+        o('Run "bb auth" to configure an API token.', 'yellow');
+        exit(1);
     }
 }

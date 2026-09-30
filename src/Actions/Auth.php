@@ -85,6 +85,11 @@ class Auth extends Base
             exit(1);
         }
 
+        if (array_key_exists('username', $authInfo) || array_key_exists('appPassword', $authInfo)) {
+            o('Note: username/appPassword are legacy fields and are no longer used for authentication.', 'yellow');
+            o('Run "bb auth" to configure an API token.', 'yellow');
+        }
+
         o($authInfo);
     }
 }
