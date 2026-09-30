@@ -181,6 +181,23 @@ class BaseMakeRequestTest extends TestCase
         $this->assertSame('', $output, 'captureOutput returns before the exception propagates.');
     }
 
+    public function testExpectedErrorStatusesThrowWithTheStatusAsTheCodeWithoutPrinting(): void
+    {
+        $this->base->queueResponse('{"type":"error","error":{"message":"No such file"}}', 404);
+
+        ob_start();
+        try {
+            $this->base->makeRequest('GET', '/src/abc/missing.md', [], true, null, [404]);
+            $this->fail('Expected an exception for a 404 response.');
+        } catch (\Exception $e) {
+            $this->assertSame(404, $e->getCode());
+        } finally {
+            $output = ob_get_clean();
+        }
+
+        $this->assertSame('', $output);
+    }
+
     public function testErrorTypedJsonBodiesAreThrownWithTheApiMessage(): void
     {
         $this->base->queueJson([
