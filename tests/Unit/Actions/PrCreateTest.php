@@ -311,6 +311,8 @@ class PrCreateTest extends ActionTestCase
 
     public function testFallsBackToTheMainBranchWhenTheModelNamesNoDevelopmentBranch(): void
     {
+        chdir($this->makeGitRepo('git@bitbucket.org:acme/widgets.git'));
+
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes + [
             '/effective-branching-model' => ['development' => ['use_mainbranch' => true]],
@@ -417,6 +419,70 @@ class PrCreateTest extends ActionTestCase
             return strpos($request['url'], '/workspaces/') === 0;
         }))[0];
         $this->assertFalse($projectRequest['isRepositoryUrl']);
+    }
+
+    /**
+     * @param array<string> $args
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('branchArgumentsWithoutASourceProvider')]
+    public function testRefusesToCreateWithoutACurrentBranch(array $args): void
+    {
+        // A directory that isn't a checkout, as with --project.
+        chdir($this->home);
+
+        $recorded = [];
+        $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
+
+        try {
+            $action->create(...$args);
+            $this->fail('Expected create to refuse without a source branch.');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Could not determine the current branch.', $e->getMessage());
+        }
+
+        $this->assertSame([], $recorded, 'Nothing is requested without a source branch.');
+    }
+
+    public static function branchArgumentsWithoutASourceProvider(): array
+    {
+        return [
+            'no branches' => [[]],
+            'destination only' => [['main']],
+        ];
+    }
+
+    public function testRefusesToCreateFromADetachedHead(): void
+    {
+        $repo = $this->makeGitRepo('git@bitbucket.org:acme/widgets.git');
+        exec(sprintf('git -C %1$s -c user.email=t@example.com -c user.name=T commit -q --allow-empty -m init 2>&1 && git -C %1$s checkout -q --detach 2>&1', escapeshellarg($repo)));
+        chdir($repo);
+
+        $action = $this->actionRouting(Pr::class, $this->defaultRoutes);
+
+        $this->expectExceptionMessage('Could not determine the current branch.');
+
+        $action->create('main');
+    }
+
+    public function testAFailureFetchingTheRepositoryIsNotTreatedAsNoDeletionDefault(): void
+    {
+        $recorded = [];
+        $action = $this->actionRouting(Pr::class, [
+            '/branching-model/settings' => ['default_branch_deletion' => null],
+        ] + $this->defaultRoutes + [
+            '' => new \Exception('An error occurred, status code: 500', 1),
+        ], $recorded);
+
+        try {
+            $this->captureOutput(function () use ($action) {
+                $action->create('feature/x', 'main');
+            });
+            $this->fail('Expected the repository fetch failure to propagate.');
+        } catch (\Exception $e) {
+            $this->assertSame('An error occurred, status code: 500', $e->getMessage());
+        }
+
+        $this->assertSame([], $this->createdPayloads($recorded), 'No pull request is created.');
     }
 
     public function testLeavesTheSourceBranchOpenWhenTheProjectSettingCannotBeRead(): void

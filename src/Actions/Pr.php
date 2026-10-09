@@ -271,8 +271,18 @@ class Pr extends Base
     public function create($fromBranch = '', $toBranch = '', $addDefaultReviewers = 1)
     {
         if (empty($toBranch)) {
-            $toBranch = $fromBranch ?: $this->developmentBranch();
-            $fromBranch = trim(exec('git symbolic-ref --short HEAD'));
+            $toBranch = $fromBranch;
+            $fromBranch = trim((string) exec('git symbolic-ref --short HEAD 2>/dev/null'));
+
+            // No checkout (--project) or a detached HEAD: there's no current
+            // branch to open the pull request from.
+            if ($fromBranch === '') {
+                throw new \Exception('Could not determine the current branch. Give the source branch: bb pr create <from> [<to>]', 1);
+            }
+
+            if (empty($toBranch)) {
+                $toBranch = $this->developmentBranch();
+            }
         }
 
         $interactive = !empty($GLOBALS['bb_cli_interactive']);
@@ -474,7 +484,8 @@ class Pr extends Base
      * The API does not apply this default when a pull request is created, so
      * it has to be resolved and sent explicitly. It lives in the branching
      * model settings as `default_branch_deletion`, where null means "inherit":
-     * the repository setting wins, then the project's, otherwise false.
+     * the repository setting wins, then the project's, otherwise false. Only
+     * a failure reading the project's settings falls back to false.
      *
      * @return bool
      *
@@ -488,9 +499,12 @@ class Pr extends Base
         );
 
         if (is_null($setting)) {
+            $workspace = explode('/', getRepoPath())[0];
+            $projectKey = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'project.key');
+
+            // Reading project settings can need more access than the
+            // repository, so only this lookup falls back to the default.
             try {
-                $workspace = explode('/', getRepoPath())[0];
-                $projectKey = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'project.key');
                 $setting = array_get(
                     $this->makeRequest('GET', "/workspaces/{$workspace}/projects/{$projectKey}/branching-model/settings", [], false, 'fetching project branching model settings'),
                     'default_branch_deletion'

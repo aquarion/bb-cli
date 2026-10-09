@@ -198,6 +198,20 @@ class BaseMakeRequestTest extends TestCase
         $this->assertSame('', $output);
     }
 
+    public function testExpectedStatusesTakePrecedenceOverTheAuthErrorMessages(): void
+    {
+        foreach ([401, 403] as $status) {
+            $this->base->queueResponse('{}', $status);
+
+            try {
+                $this->base->makeRequest('GET', '/x', [], true, null, [$status]);
+                $this->fail("Expected an exception for a {$status} response.");
+            } catch (\Exception $e) {
+                $this->assertSame($status, $e->getCode());
+            }
+        }
+    }
+
     public function testErrorTypedJsonBodiesAreThrownWithTheApiMessage(): void
     {
         $this->base->queueJson([

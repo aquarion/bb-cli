@@ -77,6 +77,10 @@ class Base
         $httpStatusCode = $response['status'];
 
         if ($httpStatusCode < 200 || $httpStatusCode > 299) {
+            if (in_array($httpStatusCode, $expectedStatuses)) {
+                throw new \Exception('Request failed, status code: '.$httpStatusCode, $httpStatusCode);
+            }
+
             if ($httpStatusCode === 401) {
                 throw new \Exception('Authorization error, please check your credentials.', 1);
             }
@@ -93,10 +97,6 @@ class Base
             }
 
             $allowedStatuses = [409];
-            if (in_array($httpStatusCode, $expectedStatuses)) {
-                throw new \Exception('Request failed, status code: '.$httpStatusCode, $httpStatusCode);
-            }
-
             if (!in_array($httpStatusCode, $allowedStatuses)) {
                 o($result);
                 throw new \Exception('An error occurred, status code: '.$httpStatusCode, 1);
