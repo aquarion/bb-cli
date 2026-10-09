@@ -50,7 +50,7 @@ class Pr extends Base
         'unRequestChanges' => ['args' => '<pr>',                  'description' => 'Remove your request-changes from a pull request'],
         'decline'          => ['args' => '<pr>',                  'description' => 'Decline a pull request'],
         'merge'            => ['args' => '<pr>',                  'description' => 'Merge a pull request'],
-        'create'           => ['args' => '<from> [<to>]',         'description' => 'Create a pull request (default reviewers unless --reviewers given, --draft for a draft)'],
+        'create'           => ['args' => '[<from>] [<to>]',       'description' => 'Create a pull request (defaults: current branch into the development branch, default reviewers, repo PR template; --draft for a draft)'],
         'edit'             => ['args' => '<pr>',                  'description' => 'Edit title, description, destination, or reviewers of a pull request'],
         'ready'            => ['args' => '<pr>',                  'description' => 'Mark a draft pull request as ready for review'],
         'show'             => ['args' => '[<pr>]',                'description' => 'Show pull request details and comments'],
@@ -253,9 +253,13 @@ class Pr extends Base
     /**
      * Create pull request from "x" to test "y".
      *
+     * With no branches, the current branch is merged into the repository's
+     * development branch; with one, the current branch is merged into it.
      * Reviewers come from --reviewers when supplied, otherwise from the
-     * repository's effective default reviewers. Pass --draft to open the
-     * pull request as a draft.
+     * repository's effective default reviewers. The description comes from
+     * --description when supplied, otherwise from the source branch's
+     * .bitbucket/pull_request_template.md. Pass --draft to open the pull
+     * request as a draft.
      *
      * @param string $fromBranch
      * @param string $toBranch
@@ -264,11 +268,21 @@ class Pr extends Base
      *
      * @throws \Exception
      */
-    public function create($fromBranch, $toBranch = '', $addDefaultReviewers = 1)
+    public function create($fromBranch = '', $toBranch = '', $addDefaultReviewers = 1)
     {
         if (empty($toBranch)) {
             $toBranch = $fromBranch;
-            $fromBranch = trim(exec('git symbolic-ref --short HEAD'));
+            $fromBranch = trim((string) exec('git symbolic-ref --short HEAD 2>/dev/null'));
+
+            // No checkout (--project) or a detached HEAD: there's no current
+            // branch to open the pull request from.
+            if ($fromBranch === '') {
+                throw new \Exception('Could not determine the current branch. Give the source branch: bb pr create <from> [<to>]', 1);
+            }
+
+            if (empty($toBranch)) {
+                $toBranch = $this->developmentBranch();
+            }
         }
 
         $interactive = !empty($GLOBALS['bb_cli_interactive']);
@@ -282,11 +296,15 @@ class Pr extends Base
                 $title = getUserInput('PR title (leave empty for default):') ?: null;
             }
             if (!$description) {
-                $description = getUserInput('PR description (leave empty to skip):') ?: null;
+                $description = getUserInput('PR description (leave empty for the PR template, if any):') ?: null;
             }
             if (!$reviewers) {
                 $reviewers = getUserInput('PR reviewers, comma separated (leave empty for default reviewers):') ?: null;
             }
+        }
+
+        if (is_null($description)) {
+            $description = $this->pullRequestTemplate($fromBranch);
         }
 
         $this->bulkCreate(
@@ -324,6 +342,8 @@ class Pr extends Base
             $prReviewers = $addDefaultReviewers ? $this->defaultReviewers() : [];
         }
 
+        $closeSourceBranch = $this->defaultCloseSourceBranch();
+
         foreach ($toBranches as $toBranch) {
             $payload = [
                 'title' => $title ?? "Merge {$fromBranch} into {$toBranch}",
@@ -347,6 +367,8 @@ class Pr extends Base
             if ($draft) {
                 $payload['draft'] = true;
             }
+
+            $payload['close_source_branch'] = $closeSourceBranch;
 
             $response = $this->makeRequest('POST', '/pullrequests', $payload, true, 'creating pull request');
 
@@ -392,6 +414,107 @@ class Pr extends Base
         return array_values(array_filter($reviewers, function ($reviewer) use ($currentUserUuid) {
             return !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid;
         }));
+    }
+
+    /**
+     * Get the repository's development branch from its effective branching
+     * model, which is where the web UI points new pull requests by default.
+     * Falls back to the main branch when the model doesn't name one.
+     *
+     * @return string
+     *
+     * @throws \Exception
+     */
+    private function developmentBranch()
+    {
+        $branch = array_get(
+            $this->makeRequest('GET', '/effective-branching-model', [], true, 'fetching branching model'),
+            'development.branch.name'
+        );
+
+        if (!$branch) {
+            $branch = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'mainbranch.name');
+        }
+
+        if (!$branch) {
+            throw new \Exception('Could not determine the development branch, please give a destination branch.', 1);
+        }
+
+        return $branch;
+    }
+
+    /**
+     * Get the source branch's .bitbucket/pull_request_template.md, as the web
+     * UI uses it to prefill new pull requests. The file is read at the
+     * branch's head commit because /src paths can't take branch names with
+     * slashes.
+     *
+     * The repository's "Default description" setting isn't exposed by the
+     * API, so it can't be used here.
+     *
+     * @param string $branch
+     * @return string|null
+     *
+     * @throws \Exception
+     */
+    private function pullRequestTemplate($branch)
+    {
+        // A 404 means an unpushed branch or no template; either way there is
+        // nothing to use, and creating the pull request reports the former.
+        try {
+            $commit = array_get(
+                $this->makeRequest('GET', '/refs/branches/'.rawurlencode($branch), [], true, 'fetching source branch', [404]),
+                'target.hash'
+            );
+            $template = $this->makeRequest('GET', "/src/{$commit}/.bitbucket/pull_request_template.md", [], true, 'fetching pull request template', [404]);
+        } catch (\Exception $e) {
+            if ($e->getCode() !== 404) {
+                throw $e;
+            }
+
+            return null;
+        }
+
+        return is_string($template) && trim($template) !== '' ? $template : null;
+    }
+
+    /**
+     * Get the default for "delete source branch after merge".
+     *
+     * The API does not apply this default when a pull request is created, so
+     * it has to be resolved and sent explicitly. It lives in the branching
+     * model settings as `default_branch_deletion`, where null means "inherit":
+     * the repository setting wins, then the project's, otherwise false. Only
+     * a failure reading the project's settings falls back to false.
+     *
+     * @return bool
+     *
+     * @throws \Exception
+     */
+    private function defaultCloseSourceBranch()
+    {
+        $setting = array_get(
+            $this->makeRequest('GET', '/branching-model/settings', [], true, 'fetching branching model settings'),
+            'default_branch_deletion'
+        );
+
+        if (is_null($setting)) {
+            $workspace = explode('/', getRepoPath())[0];
+            $projectKey = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'project.key');
+
+            // Reading project settings can need more access than the
+            // repository, so only this lookup falls back to the default.
+            try {
+                $setting = array_get(
+                    $this->makeRequest('GET', "/workspaces/{$workspace}/projects/{$projectKey}/branching-model/settings", [], false, 'fetching project branching model settings'),
+                    'default_branch_deletion'
+                );
+            } catch (\Exception $e) {
+                $setting = null;
+            }
+        }
+
+        return filter_var($setting, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
