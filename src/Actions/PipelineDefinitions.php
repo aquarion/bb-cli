@@ -152,7 +152,8 @@ class PipelineDefinitions
                         throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: invalid escape \\{$code} in a pipeline name.", 1);
                     }
 
-                    return mb_chr($point, 'UTF-8');
+                    // mb_chr() needs PHP 7.2; this works from 7.0.
+                    return mb_convert_encoding(pack('N', $point), 'UTF-8', 'UTF-32BE');
                 }
 
                 throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: unknown escape \\{$code} in a pipeline name.", 1);

@@ -119,6 +119,13 @@ YAML;
         $this->assertSame(['branches' => ['feature/*', 'a/b\\c"d']], PipelineDefinitions::parse($yaml));
     }
 
+    public function testDecodesMultiByteAndAstralEscapes(): void
+    {
+        $yaml = "pipelines:\n  branches:\n    \"caf\\u00E9-\\u20AC-\\U0001F680\":\n      - step: {script: [a]}\n";
+
+        $this->assertSame(['branches' => ["caf\u{E9}-\u{20AC}-\u{1F680}"]], PipelineDefinitions::parse($yaml));
+    }
+
     public function testRejectsEscapesItCannotDecode(): void
     {
         $this->expectException(\Exception::class);
