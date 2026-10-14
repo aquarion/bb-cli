@@ -112,6 +112,21 @@ YAML;
         PipelineDefinitions::parse("pipelines:\nimage: x\n");
     }
 
+    public function testDecodesYamlEscapesInDoubleQuotedKeys(): void
+    {
+        $yaml = "pipelines:\n  branches:\n    \"feature\\u002F*\":\n      - step: {script: [a]}\n    \"a\\x2Fb\\\\c\\\"d\":\n      - step: {script: [a]}\n";
+
+        $this->assertSame(['branches' => ['feature/*', 'a/b\\c"d']], PipelineDefinitions::parse($yaml));
+    }
+
+    public function testRejectsEscapesItCannotDecode(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('escape');
+
+        PipelineDefinitions::parse("pipelines:\n  branches:\n    \"bad\\qkey\":\n      - step: {script: [a]}\n");
+    }
+
     #[DataProvider('unsupportedProvider')]
     public function testFailsLoudlyOnConstructsItCannotRead(string $yaml, string $message): void
     {

@@ -49,7 +49,7 @@ class PipelineTest extends ActionTestCase
 
         $this->assertSame('/pipelines/42', $recorded[0]['url']);
         $this->assertSame('fetching pipeline', $recorded[0]['label']);
-        $this->assertSame('/pipelines/42/steps/', $recorded[1]['url']);
+        $this->assertSame('/pipelines/42/steps/?pagelen=100&page=1', $recorded[1]['url']);
         $this->assertSame([
             'Id: 42',
             'Creator: Ada Lovelace',
@@ -290,7 +290,7 @@ class PipelineTest extends ActionTestCase
         });
 
         $this->assertSame(
-            '/pipelines/?sort=-created_on&pagelen=5&target.branch=release%2F1.0',
+            '/pipelines/?sort=-created_on&pagelen=5&target.ref_name=release%2F1.0',
             $recorded[0]['url']
         );
     }
@@ -366,6 +366,43 @@ class PipelineTest extends ActionTestCase
 
         $this->assertCount(1, $recorded, 'An explicit branch needs no repository lookup.');
         $this->assertSame('/src/feature%2Fx/bitbucket-pipelines.yml', $recorded[0]['url']);
+    }
+
+    public function testListSaysSoWhenTheRepositoryHasNoMainBranch(): void
+    {
+        $recorded = [];
+        $action = $this->actionRouting(Pipeline::class, ['' => ['mainbranch' => null]], $recorded);
+
+        try {
+            $action->list();
+            $this->fail('Expected an exception.');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('main branch', $e->getMessage());
+            $this->assertStringContainsString('--branch', $e->getMessage());
+        }
+
+        $this->assertCount(1, $recorded, 'No source request should be made without a branch.');
+    }
+
+    public function testViewFollowsStepPagination(): void
+    {
+        $step = function ($name) {
+            return ['name' => $name, 'state' => ['name' => 'COMPLETED', 'result' => ['name' => 'SUCCESSFUL']]];
+        };
+        $recorded = [];
+        $action = $this->actionRouting(Pipeline::class, [
+            'page=1' => ['values' => [$step('First')], 'next' => 'https://api.bitbucket.org/next'],
+            'page=2' => ['values' => [$step('Second')]],
+            '/pipelines/42' => $this->pipeline(),
+        ], $recorded);
+
+        $output = $this->captureOutput(function () use ($action) {
+            $action->view(42);
+        });
+
+        $this->assertSame('/pipelines/42/steps/?pagelen=100&page=2', $recorded[2]['url']);
+        $this->assertStringContainsString('First', $output);
+        $this->assertStringContainsString('Second', $output);
     }
 
     public function testListRejectsAResponseThatIsNotTheFile(): void

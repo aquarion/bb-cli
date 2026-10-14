@@ -108,7 +108,7 @@ class PipelineDefinitions
         }
 
         if (preg_match('/^"((?:[^"\\\\]|\\\\.)*)"\s*:(?=\s|$)(.*)$/', $text, $m)) {
-            $key = stripcslashes($m[1]);
+            $key = self::decodeDoubleQuoted($m[1]);
         } elseif (preg_match("/^'((?:[^']|'')*)'\\s*:(?=\\s|\$)(.*)\$/", $text, $m)) {
             $key = str_replace("''", "'", $m[1]);
         } elseif (preg_match('/^([^\s\'"#&!|>%@`{}\[\],?-][^#]*?)\s*:(?=\s|$)(.*)$/', $text, $m)) {
@@ -124,6 +124,41 @@ class PipelineDefinitions
         $rest = trim($m[2]);
 
         return $key;
+    }
+
+    /**
+     * Decodes the escapes YAML allows in a double-quoted scalar.
+     *
+     * @throws \Exception On an escape YAML doesn't define.
+     */
+    private static function decodeDoubleQuoted($text)
+    {
+        $simple = [
+            '0' => "\0", 'a' => "\x07", 'b' => "\x08", 't' => "\t", "\t" => "\t", 'n' => "\n",
+            'v' => "\x0B", 'f' => "\f", 'r' => "\r", 'e' => "\x1B", ' ' => ' ', '"' => '"',
+            '/' => '/', '\\' => '\\', 'N' => "\u{85}", '_' => "\u{A0}", 'L' => "\u{2028}", 'P' => "\u{2029}",
+        ];
+
+        return preg_replace_callback(
+            '/\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)/su',
+            function ($m) use ($simple) {
+                $code = $m[1];
+                if (isset($simple[$code])) {
+                    return $simple[$code];
+                }
+                if (strlen($code) > 1 && in_array($code[0], ['x', 'u', 'U'], true)) {
+                    $point = hexdec(substr($code, 1));
+                    if ($point > 0x10FFFF || ($point >= 0xD800 && $point <= 0xDFFF)) {
+                        throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: invalid escape \\{$code} in a pipeline name.", 1);
+                    }
+
+                    return mb_chr($point, 'UTF-8');
+                }
+
+                throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: unknown escape \\{$code} in a pipeline name.", 1);
+            },
+            $text
+        );
     }
 
     /**

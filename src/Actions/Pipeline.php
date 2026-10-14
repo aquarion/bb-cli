@@ -61,6 +61,10 @@ class Pipeline extends Base
             );
         }
 
+        if (!$branch) {
+            throw new \Exception('Could not determine the repository\'s main branch, please give one with --branch.', 1);
+        }
+
         $yaml = $this->makeRequest(
             'GET',
             '/src/'.rawurlencode($branch).'/bitbucket-pipelines.yml',
@@ -100,7 +104,7 @@ class Pipeline extends Base
 
         $url = "/pipelines/?sort=-created_on&pagelen={$limit}";
         if (isset($GLOBALS['bb_cli_pipeline_branch'])) {
-            $url .= '&target.branch='.rawurlencode($GLOBALS['bb_cli_pipeline_branch']);
+            $url .= '&target.ref_name='.rawurlencode($GLOBALS['bb_cli_pipeline_branch']);
         }
 
         $runs = array_get($this->makeRequest('GET', $url, [], true, 'fetching recent pipelines'), 'values', []);
@@ -239,11 +243,26 @@ class Pipeline extends Base
      */
     private function printSteps($pipeLineNumber)
     {
-        $steps = array_get(
-            $this->makeRequest('GET', "/pipelines/{$pipeLineNumber}/steps/", [], true, 'fetching pipeline steps'),
-            'values',
-            []
-        );
+        $steps = [];
+        $page = 1;
+
+        // Follow pagination so long pipelines aren't cut short (safety limit: 100 pages).
+        while ($page <= 100) {
+            $response = $this->makeRequest(
+                'GET',
+                "/pipelines/{$pipeLineNumber}/steps/?pagelen=100&page={$page}",
+                [],
+                true,
+                'fetching pipeline steps'
+            );
+            $steps = array_merge($steps, array_get($response, 'values', []));
+
+            if (empty($response['next'])) {
+                break;
+            }
+
+            $page++;
+        }
 
         if (!$steps) {
             return;
