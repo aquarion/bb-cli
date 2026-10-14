@@ -143,7 +143,7 @@ class EnvTest extends ActionTestCase
     {
         $result = $this->runPhp(<<<'PHP'
             class FailingEnv extends \BBCli\BBCli\Actions\Env {
-                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null) {
+                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = []) {
                     return ['error' => ['message' => 'Bad request', 'detail' => 'key already exists']];
                 }
             }

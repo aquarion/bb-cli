@@ -51,11 +51,13 @@ class Base
      * @param  array  $payload
      * @param  bool   $isRepositoryUrl
      * @param  string|null $operationLabel
+     * @param  int[]  $expectedStatuses Error statuses the caller handles, so the
+     *                                  raw response body is not printed for them.
      * @return mixed
      * @throws \Exception
      * @see    https://developer.atlassian.com/cloud/bitbucket/rest
      */
-    public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null)
+    public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = [])
     {
         $this->checkAuth();
 
@@ -75,6 +77,10 @@ class Base
         $httpStatusCode = $response['status'];
 
         if ($httpStatusCode < 200 || $httpStatusCode > 299) {
+            if (in_array($httpStatusCode, $expectedStatuses)) {
+                throw new \Exception('Request failed, status code: '.$httpStatusCode, $httpStatusCode);
+            }
+
             if ($httpStatusCode === 401) {
                 throw new \Exception('Authorization error, please check your credentials.', 1);
             }

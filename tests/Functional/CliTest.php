@@ -93,7 +93,7 @@ class CliTest extends TestCase
         $this->assertSame(0, $result['exitCode']);
         $this->assertStringContainsString('bb pr <subcommand> [args]', $result['stdout']);
         $this->assertStringContainsString('create', $result['stdout']);
-        $this->assertStringContainsString('<from> [<to>]', $result['stdout']);
+        $this->assertStringContainsString('[<from>] [<to>]', $result['stdout']);
         $this->assertStringContainsString('ready', $result['stdout']);
     }
 
