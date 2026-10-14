@@ -346,4 +346,24 @@ class CliTest extends TestCase
             var_export($file, true)
         ));
     }
+
+    public function testThePhpVersionIsCheckedBeforeAnySourceIsLoaded(): void
+    {
+        // An older PHP can't parse newer syntax in the sources, so the check
+        // must run before the first require to be able to report anything.
+        $entrypoint = file_get_contents(dirname(__DIR__, 2).'/bin/bb');
+
+        $check = strpos($entrypoint, 'PHP_VERSION_ID < 80200');
+        $firstRequire = strpos($entrypoint, 'require');
+
+        $this->assertNotFalse($check, 'bin/bb should check for PHP 8.2.');
+        $this->assertLessThan($firstRequire, $check);
+    }
+
+    public function testTheComposerMinimumMatchesTheEntrypointCheck(): void
+    {
+        $composer = json_decode(file_get_contents(dirname(__DIR__, 2).'/composer.json'), true);
+
+        $this->assertSame('>=8.2', $composer['require']['php']);
+    }
 }
