@@ -1,16 +1,18 @@
 #!/usr/bin/env php
 <?php
 
+// Checked before loading anything: the sources may use syntax an older PHP
+// can't parse, which would fail before this message could be shown. For the
+// same reason this file itself must stay parseable by old PHP versions.
+if (PHP_VERSION_ID < 80200) {
+    fwrite(STDERR, 'bb-cli needs PHP 8.2 or newer. This is PHP '.PHP_VERSION.'.'.PHP_EOL);
+    exit(1);
+}
+
 require_once __DIR__.'/../src/utils/helpers.php';
 require_once __DIR__.'/../src/Base.php';
 
 const APP_VERSION = '#APP_VERSION#';
-
-if (version_compare(phpversion(), '7.0.0') < 0) {
-    o('Your PHP version must be equal or higher than "7.0.0" to use bb-cli', 'red');
-    o('PHP version: '.phpversion(), 'yellow');
-    exit(1);
-}
 
 $requiredExtensions = [
     'json',

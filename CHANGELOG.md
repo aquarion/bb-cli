@@ -55,6 +55,10 @@ All notable changes to this project will be documented in this file.
   leaving it off. The API doesn't apply this default itself.
 
 ### Remove
+- Support for PHP versions before 8.2. PHP 7 is long past end of life, and
+  8.2 is the oldest version the test suite runs on. `bb` now checks the
+  version before loading anything else, so an older PHP gets a clear message
+  rather than a parse error.
 - Legacy Bitbucket App Password authentication support, now that Bitbucket
   has fully retired app passwords (July 28, 2026). A config containing only
   `username`/`appPassword` now fails with a clear error directing users to
