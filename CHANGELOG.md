@@ -71,6 +71,9 @@ All notable changes to this project will be documented in this file.
   leaving it off. The API doesn't apply this default itself.
 
 ### Remove
+- Support for PHP versions before 8.4. The minimum is now PHP 8.4, and the
+  code uses its syntax. The last version supporting PHP 7.0 up to 8.3 is
+  tagged [`final-php7`](https://github.com/aquarion/bb-cli/tree/final-php7).
 - Legacy Bitbucket App Password authentication support, now that Bitbucket
   has fully retired app passwords (July 28, 2026). A config containing only
   `username`/`appPassword` now fails with a clear error directing users to
