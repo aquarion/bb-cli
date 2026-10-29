@@ -12,7 +12,7 @@ use BBCli\BBCli\Tests\Support\ActionTestCase;
 class PrCreateTest extends ActionTestCase
 {
     /** @var array<string, mixed> */
-    private $defaultRoutes;
+    private array $defaultRoutes;
 
     /**
      * Routes for the repository defaults every create looks up: no PR
@@ -20,7 +20,7 @@ class PrCreateTest extends ActionTestCase
      *
      * @var array<string, mixed>
      */
-    private $repoDefaultRoutes;
+    private array $repoDefaultRoutes;
 
     protected function setUp(): void
     {
@@ -50,9 +50,7 @@ class PrCreateTest extends ActionTestCase
     private function createdPayloads(array $recorded): array
     {
         return array_column(
-            array_values(array_filter($recorded, function ($request) {
-                return $request['method'] === 'POST' && $request['url'] === '/pullrequests';
-            })),
+            array_values(array_filter($recorded, fn(array $request): bool => $request['method'] === 'POST' && $request['url'] === '/pullrequests')),
             'payload'
         );
     }
@@ -62,7 +60,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -89,7 +87,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('main');
         });
 
@@ -104,7 +102,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main,develop');
         });
 
@@ -123,7 +121,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -131,9 +129,7 @@ class PrCreateTest extends ActionTestCase
 
         $this->assertSame('Custom title', $payload['title']);
         $this->assertSame('Why this change', $payload['description']);
-        $this->assertEmpty(array_filter(array_column($recorded, 'url'), function ($url) {
-            return strpos($url, '/src/') !== false;
-        }), 'The PR template is not fetched when --description is given.');
+        $this->assertEmpty(array_filter(array_column($recorded, 'url'), fn(string $url): bool => str_contains($url, '/src/')), 'The PR template is not fetched when --description is given.');
     }
 
     public function testDraftFlagMarksThePullRequestAsADraft(): void
@@ -143,7 +139,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -165,7 +161,7 @@ class PrCreateTest extends ActionTestCase
             '/pullrequests' => ['id' => 21, 'links' => ['html' => ['href' => 'x']]],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -190,7 +186,7 @@ class PrCreateTest extends ActionTestCase
             '/pullrequests' => ['id' => 21, 'links' => ['html' => ['href' => 'x']]],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -205,7 +201,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main', 0);
         });
 
@@ -220,7 +216,7 @@ class PrCreateTest extends ActionTestCase
 
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -239,7 +235,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -262,7 +258,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -278,7 +274,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -299,7 +295,7 @@ class PrCreateTest extends ActionTestCase
             '/effective-branching-model' => ['development' => ['branch' => ['name' => 'develop']]],
         ] + $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create();
         });
 
@@ -320,7 +316,7 @@ class PrCreateTest extends ActionTestCase
             '' => ['mainbranch' => ['name' => 'trunk']],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create();
         });
 
@@ -334,7 +330,7 @@ class PrCreateTest extends ActionTestCase
             '/src/' => "## Summary\n\n## Testing\n",
         ] + $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -352,7 +348,7 @@ class PrCreateTest extends ActionTestCase
             '/refs/branches/' => new \Exception('Request failed, status code: 404', 404),
         ] + $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -367,7 +363,7 @@ class PrCreateTest extends ActionTestCase
 
         $this->expectExceptionMessage('An error occurred, status code: 500');
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
     }
@@ -377,7 +373,7 @@ class PrCreateTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -391,7 +387,7 @@ class PrCreateTest extends ActionTestCase
             '/branching-model/settings' => ['default_branch_deletion' => true],
         ] + $this->defaultRoutes, $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
@@ -409,15 +405,13 @@ class PrCreateTest extends ActionTestCase
             '' => ['project' => ['key' => 'WID']],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 
         $this->assertTrue($this->createdPayloads($recorded)[0]['close_source_branch']);
 
-        $projectRequest = array_values(array_filter($recorded, function ($request) {
-            return strpos($request['url'], '/workspaces/') === 0;
-        }))[0];
+        $projectRequest = array_values(array_filter($recorded, fn(array $request): bool => str_starts_with($request['url'], '/workspaces/')))[0];
         $this->assertFalse($projectRequest['isRepositoryUrl']);
     }
 
@@ -474,7 +468,7 @@ class PrCreateTest extends ActionTestCase
         ], $recorded);
 
         try {
-            $this->captureOutput(function () use ($action) {
+            $this->captureOutput(function () use ($action): void {
                 $action->create('feature/x', 'main');
             });
             $this->fail('Expected the repository fetch failure to propagate.');
@@ -495,7 +489,7 @@ class PrCreateTest extends ActionTestCase
             '' => ['project' => ['key' => 'WID']],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->create('feature/x', 'main');
         });
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BBCli\BBCli\Actions;
 
 use BBCli\BBCli\Base;
@@ -38,7 +40,7 @@ class Env extends Base
     /**
      * List Environments.
      */
-    public function environments()
+    public function environments(): void
     {
         $response = $this->makeRequest('GET', '/environments', [], true, 'listing environments');
 
@@ -56,7 +58,7 @@ class Env extends Base
     /**
      * List Environment Variables.
      */
-    public function variables($envUuid)
+    public function variables($envUuid): void
     {
         $response = $this->makeRequest('GET', "/deployments_config/environments/$envUuid/variables", [], true, 'listing environment variables');
 
@@ -76,7 +78,7 @@ class Env extends Base
     /**
      * Create Environment Variable.
      */
-    public function createVariable($envUuid, $key, $value, $secured = false)
+    public function createVariable($envUuid, $key, $value, $secured = false): void
     {
         $response = $this->makeRequest('POST', "/deployments_config/environments/$envUuid/variables", [
             'key' => $key,
@@ -90,7 +92,7 @@ class Env extends Base
     /**
      * Update Environment Variable.
      */
-    public function updateVariable($envUuid, $varUuid, $key, $value, $secured = false)
+    public function updateVariable($envUuid, $varUuid, $key, $value, $secured = false): void
     {
         $response = $this->makeRequest('PUT', "/deployments_config/environments/$envUuid/variables/$varUuid", [
             'key' => $key,
@@ -104,7 +106,7 @@ class Env extends Base
     /**
      * Print variable response.
      */
-    private function variableResponse($response)
+    private function variableResponse(array $response): void
     {
         if (array_get($response, 'error')) {
             o($response['error']['message'], 'yellow');

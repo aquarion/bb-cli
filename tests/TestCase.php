@@ -17,13 +17,12 @@ abstract class TestCase extends BaseTestCase
     protected $home;
 
     /** @var string|false */
-    private $originalHome;
+    private string|bool $originalHome;
 
-    /** @var string */
-    private $originalCwd;
+    private string|bool $originalCwd;
 
     /** @var array<string> */
-    private static $tempDirs = [];
+    private static array $tempDirs = [];
 
     protected function setUp(): void
     {
@@ -205,8 +204,8 @@ abstract class TestCase extends BaseTestCase
     {
         $preamble = sprintf(
             "require %s; require_once %s; if (!defined('APP_VERSION')) { define('APP_VERSION', 'v1.0.0'); }",
-            var_export(dirname(__DIR__).'/vendor/autoload.php', true),
-            var_export(dirname(__DIR__).'/src/utils/helpers.php', true)
+            var_export(__DIR__.'/../vendor/autoload.php', true),
+            var_export(__DIR__.'/../src/utils/helpers.php', true)
         );
 
         return $this->runProcess(
@@ -225,7 +224,7 @@ abstract class TestCase extends BaseTestCase
     protected function runCli(array $args, ?string $cwd = null, ?string $stdin = null): array
     {
         return $this->runProcess(
-            array_merge([PHP_BINARY, dirname(__DIR__).'/bin/bb'], $args),
+            array_merge([PHP_BINARY, __DIR__.'/../bin/bb'], $args),
             $cwd ?? $this->home,
             $stdin
         );
@@ -234,8 +233,6 @@ abstract class TestCase extends BaseTestCase
     /**
      * Makes a directory of no-op `open`/`xdg-open` commands to put first on a
      * child process's PATH, so `bb browse` doesn't launch a real browser.
-     *
-     * @return string
      */
     private function stubBrowserOpeners(): string
     {
@@ -268,7 +265,7 @@ abstract class TestCase extends BaseTestCase
         $env['HOME'] = $this->home;
         $env['PATH'] = $this->stubBrowserOpeners().PATH_SEPARATOR.($env['PATH'] ?? getenv('PATH'));
         unset($env['argv'], $env['argc']);
-        $env = array_filter($env, 'is_scalar');
+        $env = array_filter($env, is_scalar(...));
 
         $process = proc_open($command, $descriptors, $pipes, $cwd, $env);
 

@@ -40,10 +40,8 @@ class Auth extends Base
     /**
      * It saves your user information in the config folder.
      * This is used in project (BB-CLI) process.
-     *
-     * @return void
      */
-    public function saveLoginInfo()
+    public function saveLoginInfo(): void
     {
         o('This action requires a Bitbucket API token:', 'yellow');
         o('Create one at: https://bitbucket.org/account/settings/api-tokens/', 'green');
@@ -72,10 +70,8 @@ class Auth extends Base
 
     /**
      * Shows config information (user detail).
-     *
-     * @return void
      */
-    public function show()
+    public function show(): void
     {
         $authInfo = userConfig('auth');
 

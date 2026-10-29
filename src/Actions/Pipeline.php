@@ -47,19 +47,16 @@ class Pipeline extends Base
      *
      * Read from the repository's main branch unless --branch names another.
      *
-     * @return void
      *
      * @throws \Exception
      */
-    public function list()
+    public function list(): void
     {
         $branch = $GLOBALS['bb_cli_pipeline_branch'] ?? null;
-        if ($branch === null) {
-            $branch = array_get(
-                $this->makeRequest('GET', '', [], true, 'fetching repository'),
-                'mainbranch.name'
-            );
-        }
+        $branch ??= array_get(
+            $this->makeRequest('GET', '', [], true, 'fetching repository'),
+            'mainbranch.name'
+        );
 
         if (!$branch) {
             throw new \Exception('Could not determine the repository\'s main branch, please give one with --branch.', 1);
@@ -91,11 +88,10 @@ class Pipeline extends Base
      * --limit sets how many (default 20, at most 100) and --branch filters
      * them to one branch.
      *
-     * @return void
      *
      * @throws \Exception
      */
-    public function recent()
+    public function recent(): void
     {
         $limit = $GLOBALS['bb_cli_pipeline_limit'] ?? '20';
         if (!ctype_digit((string) $limit) || $limit < 1 || $limit > 100) {
@@ -163,9 +159,8 @@ class Pipeline extends Base
      * Hangs on terminal, until given pipeline finishes.
      *
      * @param  int $pipeLineNumber
-     * @return void
      */
-    public function wait($pipeLineNumber = null)
+    public function wait($pipeLineNumber = null): void
     {
         if (is_null($pipeLineNumber)) {
             $pipeLineNumber = $this->getLatestPipelineId();
@@ -197,7 +192,7 @@ class Pipeline extends Base
     /**
      * Run pipeline for given branch.
      */
-    public function run($branch)
+    public function run($branch): void
     {
         $response = $this->makeRequest('POST', '/pipelines/', [
             'target' => [
@@ -213,7 +208,7 @@ class Pipeline extends Base
     /**
      * Run pipeline for given branch on given pipeline.
      */
-    public function custom($branch, $pipeline)
+    public function custom($branch, $pipeline): void
     {
         $response = $this->makeRequest('POST', '/pipelines/', [
             'target' => [
@@ -241,7 +236,7 @@ class Pipeline extends Base
     /**
      * Prints a pipeline's steps, if it has any.
      */
-    private function printSteps($pipeLineNumber)
+    private function printSteps($pipeLineNumber): void
     {
         $steps = [];
         $page = 1;
@@ -264,7 +259,7 @@ class Pipeline extends Base
             $page++;
         }
 
-        if (!$steps) {
+        if ($steps === []) {
             return;
         }
 

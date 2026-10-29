@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BBCli\BBCli\Tests\Unit\Actions;
 
 use BBCli\BBCli\Actions\PipelineDefinitions;

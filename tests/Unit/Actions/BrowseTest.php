@@ -9,8 +9,8 @@ class BrowseTest extends ActionTestCase
 {
     public function testShowPrintsTheRepositoryUrl(): void
     {
-        $output = $this->captureOutput(function () {
-            (new Browse())->show();
+        $output = $this->captureOutput(function (): void {
+            new Browse()->show();
         });
 
         $this->assertSame(['https://bitbucket.org/acme/widgets'], $this->lines($output));
@@ -20,8 +20,8 @@ class BrowseTest extends ActionTestCase
     {
         $GLOBALS['bb_cli_project_url'] = 'https://bitbucket.org/other/project';
 
-        $output = $this->captureOutput(function () {
-            (new Browse())->show();
+        $output = $this->captureOutput(function (): void {
+            new Browse()->show();
         });
 
         $this->assertSame(['https://bitbucket.org/other/project'], $this->lines($output));
@@ -32,8 +32,8 @@ class BrowseTest extends ActionTestCase
         unset($GLOBALS['bb_cli_project_url']);
         chdir($this->makeGitRepo('git@bitbucket.org:acme/widgets.git'));
 
-        $output = $this->captureOutput(function () {
-            (new Browse())->show();
+        $output = $this->captureOutput(function (): void {
+            new Browse()->show();
         });
 
         $this->assertSame(['https://bitbucket.org/acme/widgets'], $this->lines($output));
@@ -47,7 +47,7 @@ class BrowseTest extends ActionTestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Cannot get repository info.');
 
-        (new Browse())->show();
+        new Browse()->show();
     }
 
     public function testBrowsePrintsTheUrlBeforeOpeningIt(): void

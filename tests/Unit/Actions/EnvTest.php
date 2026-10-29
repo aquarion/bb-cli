@@ -20,7 +20,7 @@ class EnvTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->environments();
         });
 
@@ -51,7 +51,7 @@ class EnvTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->variables('{env-1}');
         });
 
@@ -86,7 +86,7 @@ class EnvTest extends ActionTestCase
                 'secured' => false,
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->createVariable('{env-1}', 'API_URL', 'https://api.test');
         });
 
@@ -105,7 +105,7 @@ class EnvTest extends ActionTestCase
             '/variables' => ['uuid' => '{v1}', 'key' => 'K', 'value' => 'V', 'secured' => true],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             // bin/bb hands every argument through as a string.
             $action->createVariable('{env-1}', 'K', 'V', '1');
         });
@@ -132,7 +132,7 @@ class EnvTest extends ActionTestCase
                 'secured' => true,
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->updateVariable('{env-1}', '{v1}', 'API_URL', 'https://new.test', true);
         });
 

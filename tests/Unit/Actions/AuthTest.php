@@ -12,8 +12,8 @@ class AuthTest extends ActionTestCase
         $this->writeUserConfig([]);
         $this->queueInput(['  dev@example.com  ', ' tok-123 ']);
 
-        $output = $this->captureOutput(function () {
-            (new Auth())->saveLoginInfo();
+        $output = $this->captureOutput(function (): void {
+            new Auth()->saveLoginInfo();
         });
 
         $this->assertStringContainsString('Auth info saved.', $output);
@@ -29,8 +29,8 @@ class AuthTest extends ActionTestCase
         $this->writeUserConfig([]);
         $this->queueInput(['dev@example.com', 'tok']);
 
-        $output = $this->captureOutput(function () {
-            (new Auth())->saveLoginInfo();
+        $output = $this->captureOutput(function (): void {
+            new Auth()->saveLoginInfo();
         });
 
         $this->assertStringContainsString('This action requires a Bitbucket API token:', $output);
@@ -42,8 +42,8 @@ class AuthTest extends ActionTestCase
         $this->writeUserConfig([]);
         $this->queueInput(['dev@example.com', 'tok']);
 
-        $this->captureOutput(function () {
-            (new Auth())->saveLoginInfo();
+        $this->captureOutput(function (): void {
+            new Auth()->saveLoginInfo();
         });
 
         $this->assertSame(['Email address: ', 'API token: '], $this->recordedPrompts());
@@ -56,8 +56,8 @@ class AuthTest extends ActionTestCase
         ]);
         $this->queueInput(['dev@example.com', 'tok']);
 
-        $this->captureOutput(function () {
-            (new Auth())->saveLoginInfo();
+        $this->captureOutput(function (): void {
+            new Auth()->saveLoginInfo();
         });
 
         $this->assertSame(['email' => 'dev@example.com', 'apiToken' => 'tok'], userConfig('auth'));
@@ -82,8 +82,8 @@ class AuthTest extends ActionTestCase
 
         $this->queueInput(['dev@example.com', 'tok']);
 
-        $output = $this->captureOutput(function () {
-            @(new Auth())->saveLoginInfo();
+        $output = $this->captureOutput(function (): void {
+            @new Auth()->saveLoginInfo();
         });
 
         $this->assertStringContainsString(
@@ -97,8 +97,8 @@ class AuthTest extends ActionTestCase
     {
         $this->writeApiTokenConfig('dev@example.com', 'tok-123');
 
-        $output = $this->captureOutput(function () {
-            (new Auth())->show();
+        $output = $this->captureOutput(function (): void {
+            new Auth()->show();
         });
 
         $this->assertSame(
@@ -118,8 +118,8 @@ class AuthTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () {
-            (new Auth())->show();
+        $output = $this->captureOutput(function (): void {
+            new Auth()->show();
         });
 
         $this->assertStringContainsString(
@@ -133,8 +133,8 @@ class AuthTest extends ActionTestCase
     {
         $this->writeApiTokenConfig();
 
-        $output = $this->captureOutput(function () {
-            (new Auth())->show();
+        $output = $this->captureOutput(function (): void {
+            new Auth()->show();
         });
 
         $this->assertStringNotContainsString('legacy fields', $output);

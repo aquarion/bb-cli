@@ -21,7 +21,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    public static function parse($yaml)
+    public static function parse($yaml): array
     {
         $sections = [];
         $inPipelines = false;
@@ -55,9 +55,7 @@ class PipelineDefinitions
 
             $text = ltrim($line);
 
-            if ($sectionIndent === null) {
-                $sectionIndent = $indent;
-            }
+            $sectionIndent ??= $indent;
 
             if ($indent === $sectionIndent) {
                 $key = self::parseKey($text, $rest);
@@ -71,9 +69,7 @@ class PipelineDefinitions
                 $childIndent = null;
                 $sections[$current] = [];
             } elseif ($indent > $sectionIndent && $current !== null && $current !== 'default') {
-                if ($childIndent === null) {
-                    $childIndent = $indent;
-                }
+                $childIndent ??= $indent;
                 if ($indent === $childIndent) {
                     $name = self::parseKey($text, $rest);
                     if ($name !== null) {
@@ -83,7 +79,7 @@ class PipelineDefinitions
             }
         }
 
-        if (!$sections) {
+        if ($sections === []) {
             throw new \Exception('No pipelines found in bitbucket-pipelines.yml.', 1);
         }
 
@@ -99,7 +95,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    private static function parseKey($text, &$rest = null)
+    private static function parseKey(string $text, &$rest = null)
     {
         $rest = '';
 
@@ -131,7 +127,7 @@ class PipelineDefinitions
      *
      * @throws \Exception On an escape YAML doesn't define.
      */
-    private static function decodeDoubleQuoted($text)
+    private static function decodeDoubleQuoted(string $text): ?string
     {
         $simple = [
             '0' => "\0", 'a' => "\x07", 'b' => "\x08", 't' => "\t", "\t" => "\t", 'n' => "\n",
@@ -141,7 +137,7 @@ class PipelineDefinitions
 
         return preg_replace_callback(
             '/\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)/su',
-            function ($m) use ($simple) {
+            function ($m) use ($simple): string {
                 $code = $m[1];
                 if (isset($simple[$code])) {
                     return $simple[$code];
@@ -152,8 +148,7 @@ class PipelineDefinitions
                         throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: invalid escape \\{$code} in a pipeline name.", 1);
                     }
 
-                    // mb_chr() needs PHP 7.2; this works from 7.0.
-                    return mb_convert_encoding(pack('N', $point), 'UTF-8', 'UTF-32BE');
+                    return mb_chr($point, 'UTF-8');
                 }
 
                 throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: unknown escape \\{$code} in a pipeline name.", 1);
@@ -167,7 +162,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    private static function assertBlockValue($rest, $key)
+    private static function assertBlockValue($rest, $key): void
     {
         if ($rest === '') {
             return;
@@ -183,7 +178,7 @@ class PipelineDefinitions
     /**
      * Removes a trailing comment, leaving "#" inside quotes alone.
      */
-    private static function stripComment($line)
+    private static function stripComment(string|array $line): string|array
     {
         $quote = null;
         $length = strlen($line);

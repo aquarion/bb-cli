@@ -37,7 +37,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(),
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->edit(12);
         });
 
@@ -63,7 +63,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(),
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->edit(12);
         });
 
@@ -85,7 +85,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(),
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->edit(12);
         });
 
@@ -118,7 +118,7 @@ class PrEditTest extends ActionTestCase
             ]),
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->edit(12);
         });
 
@@ -145,7 +145,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(),
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->edit(12);
         });
 
@@ -176,7 +176,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(['title' => 'A PR', 'draft' => false]),
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->ready(12);
         });
 
@@ -198,7 +198,7 @@ class PrEditTest extends ActionTestCase
             '/pullrequests/12' => $this->updatedPullRequest(['draft' => true]),
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->ready(12);
         });
 

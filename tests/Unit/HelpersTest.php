@@ -68,7 +68,7 @@ class HelpersTest extends TestCase
 
     public function testOutputPrintsListValuesWithoutKeys(): void
     {
-        $output = $this->captureOutput(function () {
+        $output = $this->captureOutput(function (): void {
             o(['one', 'two']);
         });
 
@@ -77,7 +77,7 @@ class HelpersTest extends TestCase
 
     public function testOutputPrintsAssociativeKeysCapitalised(): void
     {
-        $output = $this->captureOutput(function () {
+        $output = $this->captureOutput(function (): void {
             o(['branch' => 'main', 'user' => 'Ada']);
         });
 
@@ -86,7 +86,7 @@ class HelpersTest extends TestCase
 
     public function testOutputRecursesIntoNestedArrays(): void
     {
-        $output = $this->captureOutput(function () {
+        $output = $this->captureOutput(function (): void {
             o(['pullRequests' => [['id' => 1, 'link' => 'https://example.test/1']]]);
         });
 
@@ -161,7 +161,7 @@ class HelpersTest extends TestCase
     #[DataProvider('relativeTimestampProvider')]
     public function testFormatsRelativeTimestamps(string $modifier, string $expected): void
     {
-        $date = (new \DateTime())->modify($modifier);
+        $date = new \DateTime()->modify($modifier);
 
         $this->assertSame($expected, format_relative_timestamp($date->format(\DateTime::ATOM)));
     }
@@ -182,15 +182,15 @@ class HelpersTest extends TestCase
 
     public function testFormatsOlderTimestampsAsAbsoluteDates(): void
     {
-        $date = (new \DateTime())->modify('-40 days');
+        $date = new \DateTime()->modify('-40 days');
 
         $this->assertSame($date->format('M d, Y'), format_relative_timestamp($date->format(\DateTime::ATOM)));
     }
 
     public function testEightDaysAgoIsAbsoluteButSevenDaysIsRelative(): void
     {
-        $eightDays = (new \DateTime())->modify('-8 days');
-        $sevenDays = (new \DateTime())->modify('-7 days -1 minute');
+        $eightDays = new \DateTime()->modify('-8 days');
+        $sevenDays = new \DateTime()->modify('-7 days -1 minute');
 
         $this->assertSame($eightDays->format('M d, Y'), format_relative_timestamp($eightDays->format(\DateTime::ATOM)));
         $this->assertSame('7 days ago', format_relative_timestamp($sevenDays->format(\DateTime::ATOM)));
@@ -198,7 +198,7 @@ class HelpersTest extends TestCase
 
     public function testFutureTimestampsAreShownAsAbsoluteDates(): void
     {
-        $date = (new \DateTime())->modify('+2 hours');
+        $date = new \DateTime()->modify('+2 hours');
 
         $this->assertSame($date->format('M d, Y'), format_relative_timestamp($date->format(\DateTime::ATOM)));
     }
