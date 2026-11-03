@@ -95,7 +95,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    private static function parseKey(string $text, &$rest = null)
+    private static function parseKey(string $text, &$rest = null): null|string|array
     {
         $rest = '';
 
@@ -137,7 +137,7 @@ class PipelineDefinitions
 
         return preg_replace_callback(
             '/\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)/su',
-            function ($m) use ($simple): string {
+            function (array $m) use ($simple): string {
                 $code = $m[1];
                 if (isset($simple[$code])) {
                     return $simple[$code];

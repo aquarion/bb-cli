@@ -595,7 +595,7 @@ class Pr extends Base
 
         $payload = $this->buildEditPayload($title, $description, $destination, $reviewers);
 
-        if (empty($payload)) {
+        if ($payload === []) {
             throw new \Exception('No changes provided. Use --title, --description, --destination, --reviewers, or -i.', 1);
         }
 
