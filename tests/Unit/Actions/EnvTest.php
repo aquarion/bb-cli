@@ -155,4 +155,20 @@ class EnvTest extends ActionTestCase
         $this->assertStringContainsString('Bad request', $this->stripAnsi($result['stdout']));
         $this->assertStringContainsString('key already exists', $this->stripAnsi($result['stdout']));
     }
+
+    public function testVariableResponseReportsANonJsonBodyAndExits(): void
+    {
+        $result = $this->runPhp(<<<'PHP'
+            class HtmlEnv extends \BBCli\BBCli\Actions\Env {
+                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = []) {
+                    return '<html>Conflict</html>';
+                }
+            }
+            $GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+            (new HtmlEnv())->createVariable('{env-1}', 'K', 'V');
+        PHP);
+
+        $this->assertSame(1, $result['exitCode']);
+        $this->assertStringContainsString('Unexpected response from Bitbucket: <html>Conflict</html>', $this->stripAnsi($result['stdout']));
+    }
 }

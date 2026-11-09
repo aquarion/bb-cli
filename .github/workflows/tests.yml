@@ -57,6 +57,10 @@ jobs:
           php -l create-phar.php
           find src tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
 
+      - name: Check Rector has nothing to change
+        if: matrix.php == '8.4'
+        run: vendor/bin/rector process --dry-run
+
       # HttpTransportTest talks to a PHP built-in server on loopback; hosted
       # runners have no proxy configured, so no NO_PROXY handling is needed.
       - name: Run tests

@@ -106,8 +106,14 @@ class Env extends Base
     /**
      * Print variable response.
      */
-    private function variableResponse(array $response): void
+    private function variableResponse(mixed $response): void
     {
+        // makeRequest() hands back the raw body when it isn't JSON.
+        if (!is_array($response)) {
+            o('Unexpected response from Bitbucket: '.(is_scalar($response) ? $response : gettype($response)), 'red');
+            exit(1);
+        }
+
         if (array_get($response, 'error')) {
             o($response['error']['message'], 'yellow');
             o($response['error']['detail'], 'red');
