@@ -125,9 +125,9 @@ class PipelineDefinitions
     /**
      * Decodes the escapes YAML allows in a double-quoted scalar.
      *
-     * @throws \Exception On an escape YAML doesn't define.
+     * @throws \Exception On an escape YAML doesn't define, or on text that isn't valid UTF-8.
      */
-    private static function decodeDoubleQuoted(string $text): ?string
+    private static function decodeDoubleQuoted(string $text): string
     {
         $simple = [
             '0' => "\0", 'a' => "\x07", 'b' => "\x08", 't' => "\t", "\t" => "\t", 'n' => "\n",
@@ -135,7 +135,7 @@ class PipelineDefinitions
             '/' => '/', '\\' => '\\', 'N' => "\u{85}", '_' => "\u{A0}", 'L' => "\u{2028}", 'P' => "\u{2029}",
         ];
 
-        return preg_replace_callback(
+        $decoded = preg_replace_callback(
             '/\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8}|.)/su',
             function (array $m) use ($simple): string {
                 $code = $m[1];
@@ -155,6 +155,13 @@ class PipelineDefinitions
             },
             $text
         );
+
+        // The /u flag makes preg return null on invalid UTF-8.
+        if ($decoded === null) {
+            throw new \Exception('Unsupported YAML in bitbucket-pipelines.yml: a pipeline name is not valid UTF-8.', 1);
+        }
+
+        return $decoded;
     }
 
     /**

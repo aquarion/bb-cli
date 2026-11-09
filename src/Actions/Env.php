@@ -110,22 +110,29 @@ class Env extends Base
     {
         // makeRequest() hands back the raw body when it isn't JSON.
         if (!is_array($response)) {
-            o('Unexpected response from Bitbucket: '.(is_scalar($response) ? $response : gettype($response)), 'red');
+            $body = is_scalar($response) ? trim((string) $response) : '';
+            if ($body === '') {
+                $body = '(empty body)';
+            } elseif (strlen($body) > 200) {
+                $body = substr($body, 0, 200).'...';
+            }
+
+            o('Unexpected response from Bitbucket: '.$body, 'red');
             exit(1);
         }
 
         if (array_get($response, 'error')) {
-            o($response['error']['message'], 'yellow');
-            o($response['error']['detail'], 'red');
+            o(array_get($response, 'error.message', 'Bitbucket returned an error.'), 'yellow');
+            o(array_get($response, 'error.detail', ''), 'red');
             exit(1);
         }
 
         o(
             [
-                'uuid' => $response['uuid'],
-                'key' => $response['key'],
+                'uuid' => array_get($response, 'uuid', ''),
+                'key' => array_get($response, 'key', ''),
                 'value' => $response['value'] ?? '',
-                'secured' => $response['secured'] ? 'Yes' : 'No',
+                'secured' => array_get($response, 'secured') ? 'Yes' : 'No',
             ],
             'yellow'
         );

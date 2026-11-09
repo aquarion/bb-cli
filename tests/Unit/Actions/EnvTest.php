@@ -171,4 +171,39 @@ class EnvTest extends ActionTestCase
         $this->assertSame(1, $result['exitCode']);
         $this->assertStringContainsString('Unexpected response from Bitbucket: <html>Conflict</html>', $this->stripAnsi($result['stdout']));
     }
+
+    public function testVariableResponseSaysWhenTheBodyIsEmptyAndTruncatesLongOnes(): void
+    {
+        foreach (['false' => '(empty body)', "str_repeat('x', 500)" => str_repeat('x', 200).'...'] as $returned => $expected) {
+            $result = $this->runPhp(<<<PHP
+                class OddEnv extends \\BBCli\\BBCli\\Actions\\Env {
+                    public function makeRequest(\$method = 'GET', \$url = '', \$payload = [], \$isRepositoryUrl = true, \$operationLabel = null, \$expectedStatuses = []) {
+                        return $returned;
+                    }
+                }
+                \$GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+                (new OddEnv())->updateVariable('{env-1}', '{v1}', 'K', 'V');
+            PHP);
+
+            $this->assertSame(1, $result['exitCode']);
+            $this->assertStringContainsString('Unexpected response from Bitbucket: '.$expected, $this->stripAnsi($result['stdout']));
+        }
+    }
+
+    public function testVariableResponseToleratesAnErrorWithoutMessageOrDetail(): void
+    {
+        $result = $this->runPhp(<<<'PHP'
+            class BareErrorEnv extends \BBCli\BBCli\Actions\Env {
+                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = []) {
+                    return ['error' => ['code' => 409]];
+                }
+            }
+            $GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+            (new BareErrorEnv())->createVariable('{env-1}', 'K', 'V');
+        PHP);
+
+        $this->assertSame(1, $result['exitCode']);
+        $this->assertStringContainsString('Bitbucket returned an error.', $this->stripAnsi($result['stdout']));
+        $this->assertStringNotContainsString('Warning', $result['stdout']);
+    }
 }

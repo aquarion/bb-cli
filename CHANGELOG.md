@@ -48,6 +48,11 @@ All notable changes to this project will be documented in this file.
   Run it with `composer install && composer test`.
 
 ### Fix
+- `bb pipeline list` now stops with an explanation when a double-quoted
+  pipeline name isn't valid UTF-8, instead of silently leaving it out.
+- Setting an environment variable no longer prints a broken table or PHP
+  warnings when Bitbucket returns an empty or non-JSON body, or an error
+  without a message; it reports the problem and exits with status 1.
 - `create-phar.php` no longer walks the whole build checkout. It listed the
   files to ship with a directory walk filtered by a regex that matched any
   path containing "src", "config" or "phar-index.php", which pulled
