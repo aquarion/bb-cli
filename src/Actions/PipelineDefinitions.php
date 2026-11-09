@@ -95,7 +95,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    private static function parseKey(string $text, &$rest = null): null|string|array
+    private static function parseKey(string $text, &$rest = null): ?string
     {
         $rest = '';
 
@@ -162,7 +162,7 @@ class PipelineDefinitions
      *
      * @throws \Exception
      */
-    private static function assertBlockValue($rest, $key): void
+    private static function assertBlockValue($rest, string $key): void
     {
         if ($rest === '') {
             return;
@@ -178,7 +178,7 @@ class PipelineDefinitions
     /**
      * Removes a trailing comment, leaving "#" inside quotes alone.
      */
-    private static function stripComment(string|array $line): string|array
+    private static function stripComment(string $line): string
     {
         $quote = null;
         $length = strlen($line);

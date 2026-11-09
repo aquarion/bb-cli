@@ -47,7 +47,6 @@ class Pipeline extends Base
      *
      * Read from the repository's main branch unless --branch names another.
      *
-     *
      * @throws \Exception
      */
     public function list(): void
@@ -87,7 +86,6 @@ class Pipeline extends Base
      *
      * --limit sets how many (default 20, at most 100) and --branch filters
      * them to one branch.
-     *
      *
      * @throws \Exception
      */

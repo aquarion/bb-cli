@@ -74,8 +74,9 @@ All notable changes to this project will be documented in this file.
 - Support for PHP versions before 8.4. The minimum is now PHP 8.4, and the
   code uses its syntax. `bb` checks the version before loading anything else,
   so an older PHP gets a clear message rather than a parse error. The last
-  version supporting PHP 7.0 up to 8.3 is tagged
-  [`final-php7`](https://github.com/aquarion/bb-cli/tree/final-php7).
+  version for PHP older than 8.4 is tagged
+  [`final-php7`](https://github.com/aquarion/bb-cli/tree/final-php7); it
+  doesn't include later changes.
 - Legacy Bitbucket App Password authentication support, now that Bitbucket
   has fully retired app passwords (July 28, 2026). A config containing only
   `username`/`appPassword` now fails with a clear error directing users to

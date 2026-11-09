@@ -131,7 +131,6 @@ class Pr extends Base
     /**
      * Get pull request commits.
      *
-     *
      * @throws \Exception
      */
     public function commits($prNumber): void
@@ -374,7 +373,6 @@ class Pr extends Base
      * which returns bare account objects. If it is unavailable, fall back to
      * the repository-only endpoint.
      *
-     *
      * @throws \Exception
      */
     private function defaultReviewers(): array
@@ -390,7 +388,7 @@ class Pr extends Base
         }
 
         // remove current user from reviewers
-        return array_values(array_filter($reviewers, fn(array $reviewer): bool => !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid));
+        return array_values(array_filter($reviewers, fn($reviewer): bool => !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid));
     }
 
     /**
@@ -462,7 +460,6 @@ class Pr extends Base
      * model settings as `default_branch_deletion`, where null means "inherit":
      * the repository setting wins, then the project's, otherwise false. Only
      * a failure reading the project's settings falls back to false.
-     *
      *
      * @throws \Exception
      */
