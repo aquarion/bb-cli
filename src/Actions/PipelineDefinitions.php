@@ -175,11 +175,9 @@ class PipelineDefinitions
             return;
         }
 
-        if ($rest[0] === '*') {
-            throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: '{$key}' is an alias.", 1);
-        }
+        $problem = $rest[0] === '*' ? 'is an alias' : 'uses flow style or an inline value';
 
-        throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: '{$key}' uses flow style or an inline value.", 1);
+        throw new \Exception("Unsupported YAML in bitbucket-pipelines.yml: '{$key}' {$problem}.", 1);
     }
 
     /**

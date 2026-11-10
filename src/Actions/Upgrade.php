@@ -30,17 +30,25 @@ class Upgrade extends Base
     {
         $repo = $this->fetchLatestRelease();
 
-        if (APP_VERSION < $repo->tag_name) {
+        if (!is_object($repo) || !isset($repo->tag_name)) {
+            throw new \Exception('Could not read the latest release from GitHub.', 1);
+        }
+
+        if (version_compare(ltrim(APP_VERSION, 'v'), ltrim($repo->tag_name, 'v'), '<')) {
             $runningFile = $this->runningFile();
 
             o('Fetching new version ('.$repo->tag_name.') ...', 'green');
 
-            file_put_contents(
-                $runningFile,
-                $this->fetchRemote(
-                    sprintf('https://github.com/bb-cli/bb-cli/releases/download/%s/bb', $repo->tag_name)
-                )
+            $binary = $this->fetchRemote(
+                sprintf('https://github.com/bb-cli/bb-cli/releases/download/%s/bb', $repo->tag_name)
             );
+
+            // Never write a failed download over the running binary.
+            if ($binary === false || $binary === '') {
+                throw new \Exception('Could not download the new version, bb-cli was not changed.', 1);
+            }
+
+            file_put_contents($runningFile, $binary);
 
             chmod($runningFile, 0755);
 

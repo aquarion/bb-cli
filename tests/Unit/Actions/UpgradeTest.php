@@ -67,6 +67,42 @@ class UpgradeTest extends ActionTestCase
         $this->assertFileDoesNotExist($target);
     }
 
+    public function testLeavesTheRunningFileAloneWhenTheDownloadFails(): void
+    {
+        $target = $this->home.'/bb.phar';
+        file_put_contents($target, 'current-binary');
+
+        $upgrade = new class('v1.1.0', $target) extends Upgrade {
+            public function __construct(private $latestTag, private $target)
+            {
+                parent::__construct();
+            }
+
+            protected function fetchRemote($url): string|false
+            {
+                return str_contains($url, 'releases/latest')
+                    ? json_encode(['tag_name' => $this->latestTag])
+                    : false;
+            }
+
+            protected function runningFile(): string
+            {
+                return $this->target;
+            }
+        };
+
+        try {
+            $this->captureOutput(function () use ($upgrade): void {
+                $upgrade->index();
+            });
+            $this->fail('Expected the failed download to throw.');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('bb-cli was not changed', $e->getMessage());
+        }
+
+        $this->assertSame('current-binary', file_get_contents($target));
+    }
+
     public function testDownloadsAndInstallsANewerRelease(): void
     {
         $target = $this->home.'/bb.phar';

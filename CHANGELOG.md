@@ -48,6 +48,12 @@ All notable changes to this project will be documented in this file.
   Run it with `composer install && composer test`.
 
 ### Fix
+- `bb upgrade` no longer overwrites the installed binary when the download
+  fails, compares versions numerically, and reports a clear error when the
+  latest release can't be read.
+- Network errors now exit with status 1 instead of 0.
+- A git `origin` URL without a `.git` suffix is recognised as a Bitbucket
+  repository.
 - `bb pipeline list` now stops with an explanation when a double-quoted
   pipeline name isn't valid UTF-8, instead of silently leaving it out.
 - Setting an environment variable no longer prints a broken table or PHP

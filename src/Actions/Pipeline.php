@@ -52,10 +52,7 @@ class Pipeline extends Base
     public function list(): void
     {
         $branch = $GLOBALS['bb_cli_pipeline_branch'] ?? null;
-        $branch ??= array_get(
-            $this->makeRequest('GET', '', [], true, 'fetching repository'),
-            'mainbranch.name'
-        );
+        $branch ??= array_get($this->repository(), 'mainbranch.name');
 
         if (!$branch) {
             throw new \Exception('Could not determine the repository\'s main branch, please give one with --branch.', 1);

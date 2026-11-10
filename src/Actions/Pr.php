@@ -408,7 +408,7 @@ class Pr extends Base
         );
 
         if (!$branch) {
-            $branch = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'mainbranch.name');
+            $branch = array_get($this->repository(), 'mainbranch.name');
         }
 
         if (!$branch) {
@@ -472,7 +472,7 @@ class Pr extends Base
 
         if (is_null($setting)) {
             $workspace = explode('/', getRepoPath())[0];
-            $projectKey = array_get($this->makeRequest('GET', '', [], true, 'fetching repository'), 'project.key');
+            $projectKey = array_get($this->repository(), 'project.key');
 
             // Reading project settings can need more access than the
             // repository, so only this lookup falls back to the default.
