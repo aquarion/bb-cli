@@ -36,9 +36,8 @@ class PrDetails extends Base
      *
      * @param int $prId
      * @param bool $unresolved
-     * @return void
      */
-    public function show($prId = null, $unresolved = false)
+    public function show($prId = null, $unresolved = false): void
     {
         if (is_null($prId)) {
             throw new \Exception('PR ID required. Usage: bb pr show <pr_id> [unresolved]');
@@ -60,9 +59,8 @@ class PrDetails extends Base
      * Display the pull request's title, branches, reviewers and description.
      *
      * @param int $prId
-     * @return void
      */
-    private function displaySummary($prId)
+    private function displaySummary($prId): void
     {
         $pr = $this->makeRequest('GET', "/pullrequests/{$prId}", [], true, 'fetching pull request details');
 
@@ -99,9 +97,8 @@ class PrDetails extends Base
      * "Name (state)" for each reviewer, using the state from the participants list.
      *
      * @param array $pr
-     * @return string
      */
-    private function formatReviewers($pr)
+    private function formatReviewers($pr): string
     {
         $states = [];
         foreach (array_get($pr, 'participants', []) as $participant) {
@@ -112,7 +109,7 @@ class PrDetails extends Base
             $states[array_get($participant, 'user.uuid')] = $state;
         }
 
-        return implode(', ', array_map(function ($reviewer) use ($states) {
+        return implode(', ', array_map(function ($reviewer) use ($states): string {
             $state = $states[array_get($reviewer, 'uuid')] ?? null;
 
             return sprintf(
@@ -127,10 +124,8 @@ class PrDetails extends Base
      * Display pull request comments.
      *
      * @param int $prId
-     * @param bool $unresolved
-     * @return void
      */
-    private function displayComments($prId, $unresolved)
+    private function displayComments($prId, bool $unresolved): void
     {
         $commentsData = $this->fetchAllComments($prId, $unresolved);
         $comments = $commentsData['general'];
@@ -174,10 +169,8 @@ class PrDetails extends Base
      * Applies unresolved filter only to inline comments (general comments are never resolvable).
      *
      * @param int $prId
-     * @param bool $unresolved
-     * @return array
      */
-    private function fetchAllComments($prId, $unresolved = false)
+    private function fetchAllComments($prId, bool $unresolved = false): array
     {
         $general = [];
         $inline = [];
@@ -212,18 +205,14 @@ class PrDetails extends Base
         }
 
         // Sort both arrays chronologically by created_on
-        usort($general, function ($a, $b) {
-            return strcmp($a['created_on'], $b['created_on']);
-        });
-        usort($inline, function ($a, $b) {
-            return strcmp($a['created_on'], $b['created_on']);
-        });
+        usort($general, fn(array $a, array $b): int => strcmp($a['created_on'], $b['created_on']));
+        usort($inline, fn(array $a, array $b): int => strcmp($a['created_on'], $b['created_on']));
 
         // Apply unresolved filter if requested
         // Per Bitbucket API: only inline comments are resolvable
         // General comments (no inline field) are never resolvable and always shown
         if ($unresolved) {
-            $inline = array_values(array_filter($inline, [$this, 'isUnresolvedComment']));
+            $inline = array_values(array_filter($inline, $this->isUnresolvedComment(...)));
             // General comments remain unchanged - they are never resolvable
         }
 
@@ -237,9 +226,8 @@ class PrDetails extends Base
      * Check if a comment is unresolved.
      *
      * @param array $comment
-     * @return bool
      */
-    private function isUnresolvedComment($comment)
+    private function isUnresolvedComment($comment): bool
     {
         // Per Bitbucket API: if 'resolution' key exists (even as empty object {}),
         // the comment is resolved. No resolution key means unresolved.
@@ -250,9 +238,8 @@ class PrDetails extends Base
      * Format a general comment for display.
      *
      * @param array $comment
-     * @return array
      */
-    private function formatGeneralComment($comment)
+    private function formatGeneralComment($comment): array
     {
         if (array_get($comment, 'deleted')) {
             return [
@@ -278,11 +265,8 @@ class PrDetails extends Base
     /**
      * The "author (when) [#id, reply to #parent]:" line above a comment.
      * The id is what "bb pr comment --reply-to" takes.
-     *
-     * @param array $formatted
-     * @return string
      */
-    private function commentHeading($formatted)
+    private function commentHeading(array $formatted): string
     {
         $heading = "{$formatted['author']} ({$formatted['timestamp']})";
 
@@ -301,14 +285,11 @@ class PrDetails extends Base
      * Format an inline comment for display.
      *
      * @param array $comment
-     * @return array
      */
-    private function formatInlineComment($comment)
+    private function formatInlineComment($comment): array
     {
         $line = array_get($comment, 'inline.to');
-        if (is_null($line)) {
-            $line = array_get($comment, 'inline.from');
-        }
+        $line ??= array_get($comment, 'inline.from');
 
         // Handle deleted inline comments
         if (array_get($comment, 'deleted')) {

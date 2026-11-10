@@ -70,7 +70,7 @@ class CommandMetadataTest extends TestCase
             "{$class} must define its own DEFAULT_METHOD."
         );
         $this->assertTrue(method_exists($class, $default), "{$class}::{$default}() is missing.");
-        $this->assertTrue((new \ReflectionMethod($class, $default))->isPublic());
+        $this->assertTrue(new \ReflectionMethod($class, $default)->isPublic());
     }
 
     #[DataProvider('actionProvider')]
@@ -81,7 +81,7 @@ class CommandMetadataTest extends TestCase
         $this->assertIsArray($class::AVAILABLE_COMMANDS);
 
         foreach ($class::AVAILABLE_COMMANDS as $method => $aliases) {
-            foreach (array_map('trim', explode(',', $aliases)) as $alias) {
+            foreach (array_map(trim(...), explode(',', $aliases)) as $alias) {
                 $this->assertSame(
                     $method,
                     $action->getMethodNameFromAlias($alias),
@@ -99,7 +99,7 @@ class CommandMetadataTest extends TestCase
         $this->assertIsArray($class::AVAILABLE_COMMANDS);
 
         foreach ($class::AVAILABLE_COMMANDS as $method => $aliases) {
-            foreach (array_map('trim', explode(',', $aliases)) as $alias) {
+            foreach (array_map(trim(...), explode(',', $aliases)) as $alias) {
                 $this->assertNotSame('', $alias);
 
                 if (isset($seen[$alias])) {
@@ -144,14 +144,14 @@ class CommandMetadataTest extends TestCase
 
     public function testUnknownAliasesResolveToFalse(): void
     {
-        $this->assertFalse((new Pr())->getMethodNameFromAlias('nope'));
-        $this->assertFalse((new Branch())->getMethodNameFromAlias(''));
+        $this->assertFalse(new Pr()->getMethodNameFromAlias('nope'));
+        $this->assertFalse(new Branch()->getMethodNameFromAlias(''));
     }
 
     public function testAutocompleteListsTheFirstAliasOfEachCommandSorted(): void
     {
-        $output = $this->captureOutput(function () {
-            (new Branch())->listCommandsForAutocomplete();
+        $output = $this->captureOutput(function (): void {
+            new Branch()->listCommandsForAutocomplete();
         });
 
         $this->assertSame('list name user', $output);
@@ -159,8 +159,8 @@ class CommandMetadataTest extends TestCase
 
     public function testAutocompleteForPipelineUsesShortAliases(): void
     {
-        $output = $this->captureOutput(function () {
-            (new Pipeline())->listCommandsForAutocomplete();
+        $output = $this->captureOutput(function (): void {
+            new Pipeline()->listCommandsForAutocomplete();
         });
 
         $this->assertSame('custom latest list recent run view wait', $output);
@@ -168,8 +168,8 @@ class CommandMetadataTest extends TestCase
 
     public function testAutocompleteForAnActionWithoutCommandsIsEmpty(): void
     {
-        $output = $this->captureOutput(function () {
-            (new Upgrade())->listCommandsForAutocomplete();
+        $output = $this->captureOutput(function (): void {
+            new Upgrade()->listCommandsForAutocomplete();
         });
 
         $this->assertSame('', $output);
@@ -196,16 +196,12 @@ class CommandMetadataTest extends TestCase
         preg_match_all('/\\\\BBCli\\\\BBCli\\\\Actions\\\\(\w+)::class/', $matches[1], $classes);
 
         $registered = array_map(
-            function ($name) {
-                return 'BBCli\\BBCli\\Actions\\'.$name;
-            },
+            fn(string $name): string => 'BBCli\\BBCli\\Actions\\'.$name,
             $classes[1]
         );
 
         $tested = array_map(
-            function ($row) {
-                return $row[0];
-            },
+            fn(array $row) => $row[0],
             array_values(self::actionProvider())
         );
 

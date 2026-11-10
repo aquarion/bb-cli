@@ -12,20 +12,20 @@ use BBCli\BBCli\Tests\Support\ActionTestCase;
 class PrCommentTest extends ActionTestCase
 {
     /** @var array<int, array{method: string, url: string, payload: array}> */
-    private $recorded = [];
+    private array $recorded = [];
 
     /**
      * An action whose makeRequest() records calls and answers like the
      * comments endpoint, with readStdin() returning $stdin.
      */
-    private function commentAction(?string $stdin = null)
+    private function commentAction(?string $stdin = null): \PHPUnit\Framework\MockObject\MockObject
     {
         $action = $this->getMockBuilder(Pr::class)
             ->onlyMethods(['makeRequest', 'readStdin'])
             ->getMock();
 
         $this->recorded = [];
-        $action->method('makeRequest')->willReturnCallback(function ($method, $url, $payload = []) {
+        $action->method('makeRequest')->willReturnCallback(function ($method, $url, $payload = []): array {
             $this->recorded[] = ['method' => $method, 'url' => $url, 'payload' => $payload];
 
             return [
@@ -42,7 +42,7 @@ class PrCommentTest extends ActionTestCase
     {
         $action = $this->commentAction();
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->comment(7, 'Looks good');
         });
 
@@ -62,7 +62,7 @@ class PrCommentTest extends ActionTestCase
     {
         $action = $this->commentAction();
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->comment(7, 'Looks', 'good', 'to', 'me');
         });
 
@@ -73,7 +73,7 @@ class PrCommentTest extends ActionTestCase
     {
         $action = $this->commentAction("First line\n\nSecond paragraph\n");
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->comment(7, '-');
         });
 
@@ -108,7 +108,7 @@ class PrCommentTest extends ActionTestCase
 
         $action = $this->commentAction();
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->comment(7, 'Nit');
         });
 
@@ -124,7 +124,7 @@ class PrCommentTest extends ActionTestCase
 
         $action = $this->commentAction();
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->comment(7, 'Done');
         });
 

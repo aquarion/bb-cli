@@ -65,7 +65,7 @@ abstract class ActionTestCase extends TestCase
                 ];
 
                 foreach ($responses as $needle => $response) {
-                    if (strpos($url, (string) $needle) !== false) {
+                    if (str_contains($url, (string) $needle)) {
                         if ($response instanceof \Throwable) {
                             throw $response;
                         }
@@ -88,9 +88,7 @@ abstract class ActionTestCase extends TestCase
      */
     protected function lines(string $output): array
     {
-        return array_values(array_filter(array_map('trim', explode(PHP_EOL, $output)), function ($line) {
-            return $line !== '';
-        }));
+        return array_values(array_filter(array_map(trim(...), explode(PHP_EOL, $output)), fn($line): bool => $line !== ''));
     }
 
     /**
@@ -102,7 +100,6 @@ abstract class ActionTestCase extends TestCase
     protected function callPrivate(object $target, string $method, array $args = [])
     {
         $reflection = new \ReflectionMethod($target, $method);
-        $reflection->setAccessible(true);
 
         return $reflection->invokeArgs($target, $args);
     }

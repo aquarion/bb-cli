@@ -31,7 +31,7 @@ class PrTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -61,7 +61,7 @@ class PrTest extends ActionTestCase
             '/pullrequests/2' => ['reviewers' => [], 'participants' => []],
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list('develop');
         });
 
@@ -74,7 +74,7 @@ class PrTest extends ActionTestCase
     {
         $action = $this->actionRouting(Pr::class, ['/pullrequests?state=OPEN' => ['values' => []]]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -90,7 +90,7 @@ class PrTest extends ActionTestCase
             ->with('GET', '/pullrequests/5/diff', [], true, 'fetching pull request diff')
             ->willReturn($diff);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->diff(5);
         });
 
@@ -110,7 +110,7 @@ class PrTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->files(5);
         });
 
@@ -130,7 +130,7 @@ class PrTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->commits(5);
         });
 
@@ -150,7 +150,7 @@ class PrTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pr::class, ['/approve' => []], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->approve(3, 4);
         });
 
@@ -167,7 +167,7 @@ class PrTest extends ActionTestCase
             '/approve' => [],
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->approve(0);
         });
 
@@ -196,7 +196,7 @@ class PrTest extends ActionTestCase
             ->with('DELETE', '/pullrequests/5/approve', [], true, 'removing pull request approval')
             ->willReturn('');
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->unApprove(5);
         });
     }
@@ -209,7 +209,7 @@ class PrTest extends ActionTestCase
             ->with('POST', '/pullrequests/5/request-changes', [], true, 'requesting changes on pull request')
             ->willReturn('');
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->requestChanges(5);
         });
     }
@@ -222,7 +222,7 @@ class PrTest extends ActionTestCase
             ->with('DELETE', '/pullrequests/5/request-changes', [], true, 'removing pull request change request')
             ->willReturn('');
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->unRequestChanges(5);
         });
     }
@@ -235,7 +235,7 @@ class PrTest extends ActionTestCase
             ->with('POST', '/pullrequests/5/decline', [], true, 'declining pull request')
             ->willReturn([]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->decline(5);
         });
 
@@ -250,7 +250,7 @@ class PrTest extends ActionTestCase
             ->with('POST', '/pullrequests/5/merge', [], true, 'merging pull request')
             ->willReturn(['state' => 'MERGED']);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->merge(5);
         });
 
@@ -262,6 +262,6 @@ class PrTest extends ActionTestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('PR ID required.');
 
-        (new Pr())->show(null);
+        new Pr()->show();
     }
 }

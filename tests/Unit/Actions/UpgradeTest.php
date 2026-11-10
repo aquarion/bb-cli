@@ -18,31 +18,23 @@ class UpgradeTest extends ActionTestCase
             /** @var array<string> */
             public $fetched = [];
 
-            private $latestTag;
-            private $payload;
-            private $target;
-
-            public function __construct($latestTag, $payload, $target)
+            public function __construct(private $latestTag, private $payload, private $target)
             {
                 parent::__construct();
-
-                $this->latestTag = $latestTag;
-                $this->payload = $payload;
-                $this->target = $target;
             }
 
-            protected function fetchRemote($url)
+            protected function fetchRemote($url): string|false
             {
                 $this->fetched[] = $url;
 
-                if (strpos($url, 'releases/latest') !== false) {
+                if (str_contains($url, 'releases/latest')) {
                     return json_encode(['tag_name' => $this->latestTag]);
                 }
 
                 return $this->payload;
             }
 
-            protected function runningFile()
+            protected function runningFile(): string
             {
                 return $this->target;
             }
@@ -54,7 +46,7 @@ class UpgradeTest extends ActionTestCase
         $target = $this->home.'/bb.phar';
         $upgrade = $this->upgrade('v1.0.0', 'new-binary', $target);
 
-        $output = $this->captureOutput(function () use ($upgrade) {
+        $output = $this->captureOutput(function () use ($upgrade): void {
             $upgrade->index();
         });
 
@@ -67,7 +59,7 @@ class UpgradeTest extends ActionTestCase
         $target = $this->home.'/bb.phar';
         $upgrade = $this->upgrade('v0.9.0', 'new-binary', $target);
 
-        $output = $this->captureOutput(function () use ($upgrade) {
+        $output = $this->captureOutput(function () use ($upgrade): void {
             $upgrade->index();
         });
 
@@ -82,7 +74,7 @@ class UpgradeTest extends ActionTestCase
 
         $upgrade = $this->upgrade('v2.1.0', 'new-binary', $target);
 
-        $output = $this->captureOutput(function () use ($upgrade) {
+        $output = $this->captureOutput(function () use ($upgrade): void {
             $upgrade->index();
         });
 
@@ -101,7 +93,7 @@ class UpgradeTest extends ActionTestCase
 
         $upgrade = $this->upgrade('v2.1.0', 'new-binary', $target);
 
-        $this->captureOutput(function () use ($upgrade) {
+        $this->captureOutput(function () use ($upgrade): void {
             $upgrade->index();
         });
 
@@ -113,7 +105,7 @@ class UpgradeTest extends ActionTestCase
         $target = $this->home.'/bb.phar';
         $upgrade = $this->upgrade('v2.1.0', 'new-binary', $target);
 
-        $this->captureOutput(function () use ($upgrade) {
+        $this->captureOutput(function () use ($upgrade): void {
             $upgrade->index();
         });
 
@@ -130,7 +122,7 @@ class UpgradeTest extends ActionTestCase
         $this->writeUserConfig([]);
         $target = $this->home.'/bb.phar';
 
-        $output = $this->captureOutput(function () use ($target) {
+        $output = $this->captureOutput(function () use ($target): void {
             $this->upgrade('v1.0.0', '', $target)->index();
         });
 

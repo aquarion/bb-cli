@@ -11,11 +11,9 @@ use BBCli\BBCli\Tests\TestCase;
  */
 class PharBuildTest extends TestCase
 {
-    /** @var string|null */
-    private static $buildDir;
+    private static ?string $buildDir = null;
 
-    /** @var string|null */
-    private static $phar;
+    private static ?string $phar = null;
 
     protected function setUp(): void
     {

@@ -1,4 +1,4 @@
-FROM docker.io/library/php:8.3-cli
+FROM docker.io/library/php:8.4-cli
 WORKDIR /workdir
 ENTRYPOINT [ "/bb" ]
 ADD --chmod=755 bb.phar /bb

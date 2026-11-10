@@ -43,7 +43,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/42' => $this->pipeline(),
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->view(42);
         });
 
@@ -73,7 +73,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/42' => $this->pipeline(),
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->view(42);
         });
 
@@ -85,7 +85,7 @@ class PipelineTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pipeline::class, ['/pipelines/7' => $this->pipeline()], $recorded);
 
-        $output = $this->captureOutput(function () use ($action, &$response) {
+        $output = $this->captureOutput(function () use ($action, &$response): void {
             $response = $action->view(7, true);
         });
 
@@ -96,8 +96,8 @@ class PipelineTest extends ActionTestCase
 
     public function testGetRemainsAnAliasForView(): void
     {
-        $this->assertSame('view', (new Pipeline())->getMethodNameFromAlias('get'));
-        $this->assertSame('view', (new Pipeline())->getMethodNameFromAlias('view'));
+        $this->assertSame('view', new Pipeline()->getMethodNameFromAlias('get'));
+        $this->assertSame('view', new Pipeline()->getMethodNameFromAlias('view'));
     }
 
     public function testLatestUsesThePipelineCountAsTheBuildNumber(): void
@@ -109,7 +109,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/' => ['size' => 13],
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->latest();
         });
 
@@ -139,7 +139,7 @@ class PipelineTest extends ActionTestCase
             )
             ->willReturn(['build_number' => 5]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->run('feature/x');
         });
 
@@ -170,7 +170,7 @@ class PipelineTest extends ActionTestCase
             )
             ->willReturn(['build_number' => 99]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->custom('main', 'nightly');
         });
 
@@ -188,7 +188,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/8' => $this->pipeline('COMPLETED'),
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->wait(8);
         });
 
@@ -205,7 +205,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/' => ['size' => 4],
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->wait();
         });
 
@@ -225,14 +225,14 @@ class PipelineTest extends ActionTestCase
         $recorded = [];
         $action = $this->action(Pipeline::class);
         $action->method('makeRequest')->willReturnCallback(
-            function ($method, $url) use (&$states, &$recorded) {
+            function ($method, $url) use (&$states, &$recorded): ?array {
                 $recorded[] = $url;
 
                 return array_shift($states);
             }
         );
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->wait(3);
         });
 
@@ -262,7 +262,7 @@ class PipelineTest extends ActionTestCase
             $this->runEntry(10, 'COMPLETED', 'FAILED', 'main', '2024-03-01T12:00:00Z'),
         ]]], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->recent();
         });
 
@@ -273,9 +273,7 @@ class PipelineTest extends ActionTestCase
             '#12 SUCCESSFUL main Ada Lovelace 2 hours ago',
             '#11 IN_PROGRESS feature/x Ada Lovelace 2 hours ago',
             '#10 FAILED main Ada Lovelace Mar 01, 2024',
-        ], array_map(function ($line) {
-            return preg_replace('/\s+/', ' ', $line);
-        }, $this->lines($output)));
+        ], array_map(fn(string $line): ?string => preg_replace('/\s+/', ' ', $line), $this->lines($output)));
     }
 
     public function testRecentFiltersByBranchAndHonoursTheLimit(): void
@@ -285,7 +283,7 @@ class PipelineTest extends ActionTestCase
         $recorded = [];
         $action = $this->actionRouting(Pipeline::class, ['/pipelines/' => ['values' => []]], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->recent();
         });
 
@@ -299,7 +297,7 @@ class PipelineTest extends ActionTestCase
     {
         $action = $this->actionRouting(Pipeline::class, ['/pipelines/' => ['values' => []]]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->recent();
         });
 
@@ -330,14 +328,14 @@ class PipelineTest extends ActionTestCase
         $recorded = [];
         $action = $this->action(Pipeline::class);
         $action->method('makeRequest')->willReturnCallback(
-            function ($method, $url, $payload = [], $repo = true, $label = null) use ($yaml, &$recorded) {
+            function ($method, $url, $payload = [], $repo = true, $label = null) use ($yaml, &$recorded): array|string {
                 $recorded[] = [$method, $url, $label];
 
                 return $url === '' ? ['mainbranch' => ['name' => 'trunk']] : $yaml;
             }
         );
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -360,7 +358,7 @@ class PipelineTest extends ActionTestCase
             '/src/' => "pipelines:\n  default:\n    - step: {script: [a]}\n",
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -386,9 +384,7 @@ class PipelineTest extends ActionTestCase
 
     public function testViewFollowsStepPagination(): void
     {
-        $step = function ($name) {
-            return ['name' => $name, 'state' => ['name' => 'COMPLETED', 'result' => ['name' => 'SUCCESSFUL']]];
-        };
+        $step = (fn($name): array => ['name' => $name, 'state' => ['name' => 'COMPLETED', 'result' => ['name' => 'SUCCESSFUL']]]);
         $recorded = [];
         $action = $this->actionRouting(Pipeline::class, [
             'page=1' => ['values' => [$step('First')], 'next' => 'https://api.bitbucket.org/next'],
@@ -396,7 +392,7 @@ class PipelineTest extends ActionTestCase
             '/pipelines/42' => $this->pipeline(),
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->view(42);
         });
 

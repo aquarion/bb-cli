@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BBCli\BBCli\Tests\Unit\Actions;
 
 use BBCli\BBCli\Actions\PipelineDefinitions;
@@ -132,6 +134,32 @@ YAML;
         $this->expectExceptionMessage('escape');
 
         PipelineDefinitions::parse("pipelines:\n  branches:\n    \"bad\\qkey\":\n      - step: {script: [a]}\n");
+    }
+
+    #[DataProvider('invalidCodePointProvider')]
+    public function testRejectsEscapesThatAreNotUnicodeCodePoints(string $escape): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('invalid escape');
+
+        PipelineDefinitions::parse("pipelines:\n  branches:\n    \"a{$escape}b\":\n      - step: {script: [a]}\n");
+    }
+
+    public static function invalidCodePointProvider(): array
+    {
+        return [
+            'high surrogate' => ['\\uD800'],
+            'low surrogate' => ['\\uDFFF'],
+            'above U+10FFFF' => ['\\U00110000'],
+        ];
+    }
+
+    public function testRejectsAQuotedNameThatIsNotValidUtf8(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('not valid UTF-8');
+
+        PipelineDefinitions::parse("pipelines:\n  custom:\n    \"bad\xFFname\":\n      - step: {script: [a]}\n");
     }
 
     #[DataProvider('unsupportedProvider')]

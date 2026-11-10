@@ -62,9 +62,8 @@ class Pr extends Base
      * List pull request for repository.
      *
      * @param string $destination
-     * @return void
      */
-    public function list($destination = '')
+    public function list($destination = ''): void
     {
         $result = [];
 
@@ -85,20 +84,16 @@ class Pr extends Base
                 'link' => array_get($prInfo, 'links.html.href'),
                 'reviewers' => implode(
                     ', ',
-                    array_map(function ($reviewer) {
-                        return $reviewer['display_name'];
-                    }, $prDetail['reviewers'])
+                    array_map(fn(array $reviewer) => $reviewer['display_name'], $prDetail['reviewers'])
                 ),
                 'participants' => implode(
                     ' | ',
                     array_filter(
-                        array_map(function ($participant) {
-                            return $participant['state'] ? sprintf(
-                                '%s -> %s',
-                                $participant['user']['display_name'],
-                                $participant['state']
-                            ) : null;
-                        }, $prDetail['participants'])
+                        array_map(fn(array $participant): ?string => $participant['state'] ? sprintf(
+                            '%s -> %s',
+                            $participant['user']['display_name'],
+                            $participant['state']
+                        ) : null, $prDetail['participants'])
                     )
                 ),
             ];
@@ -111,9 +106,8 @@ class Pr extends Base
      * Get pull request diff.
      *
      * @param int $prNumber
-     * @return void
      */
-    public function diff($prNumber)
+    public function diff($prNumber): void
     {
         o($this->makeRequest('GET', "/pullrequests/{$prNumber}/diff", [], true, 'fetching pull request diff'), 'yellow');
     }
@@ -122,11 +116,10 @@ class Pr extends Base
      * Diff stats file.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function files($prNumber)
+    public function files($prNumber): void
     {
         $response = array_get($this->makeRequest('GET', "/pullrequests/{$prNumber}/diffstat", [], true, 'fetching pull request files'), 'values');
 
@@ -138,11 +131,9 @@ class Pr extends Base
     /**
      * Get pull request commits.
      *
-     * @return void
-     *
      * @throws \Exception
      */
-    public function commits($prNumber)
+    public function commits($prNumber): void
     {
         $result = [];
 
@@ -157,13 +148,12 @@ class Pr extends Base
      * Approve pull request.
      *
      * @param array $prNumbers
-     * @return void
      *
      * @throws \Exception
      */
-    public function approve(...$prNumbers)
+    public function approve(...$prNumbers): void
     {
-        if (empty($prNumbers)) {
+        if ($prNumbers === []) {
             throw new \Exception('Pr number required.', 1);
         }
 
@@ -175,7 +165,7 @@ class Pr extends Base
                 $prNumbers[] = $prInfo['id'];
             }
 
-            if (empty($prNumbers)) {
+            if ($prNumbers === []) {
                 throw new \Exception('Pr not found.', 1);
             }
         }
@@ -190,11 +180,10 @@ class Pr extends Base
      * Revert pull request to not approved status.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function unApprove($prNumber)
+    public function unApprove($prNumber): void
     {
         o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/approve", [], true, 'removing pull request approval'));
     }
@@ -203,11 +192,10 @@ class Pr extends Base
      *  Request changes for pull request
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function requestChanges($prNumber)
+    public function requestChanges($prNumber): void
     {
         o($this->makeRequest('POST', "/pullrequests/{$prNumber}/request-changes", [], true, 'requesting changes on pull request'));
     }
@@ -216,11 +204,10 @@ class Pr extends Base
      * Revert pull request to not request changes status.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function unRequestChanges($prNumber)
+    public function unRequestChanges($prNumber): void
     {
         o($this->makeRequest('DELETE', "/pullrequests/{$prNumber}/request-changes", [], true, 'removing pull request change request'));
     }
@@ -229,11 +216,10 @@ class Pr extends Base
      * Decline pull request.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function decline($prNumber)
+    public function decline($prNumber): void
     {
         $this->makeRequest('POST', "/pullrequests/{$prNumber}/decline", [], true, 'declining pull request');
         o('OK.', 'green');
@@ -243,11 +229,10 @@ class Pr extends Base
      * Merge pull request.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function merge($prNumber)
+    public function merge($prNumber): void
     {
         o($this->makeRequest('POST', "/pullrequests/{$prNumber}/merge", [], true, 'merging pull request')['state'], 'green');
     }
@@ -266,11 +251,10 @@ class Pr extends Base
      * @param string $fromBranch
      * @param string $toBranch
      * @param int $addDefaultReviewers
-     * @return void
      *
      * @throws \Exception
      */
-    public function create($fromBranch = '', $toBranch = '', $addDefaultReviewers = 1)
+    public function create($fromBranch = '', $toBranch = '', $addDefaultReviewers = 1): void
     {
         if (empty($toBranch)) {
             $toBranch = $fromBranch;
@@ -305,9 +289,7 @@ class Pr extends Base
             }
         }
 
-        if (is_null($description)) {
-            $description = $this->pullRequestTemplate($fromBranch);
-        }
+        $description ??= $this->pullRequestTemplate($fromBranch);
 
         $this->bulkCreate(
             explode(',', $toBranch),
@@ -323,18 +305,15 @@ class Pr extends Base
     /**
      * Create pull request from "x" to test "y".
      *
-     * @param array $toBranches
      * @param string $fromBranch
-     * @param bool $addDefaultReviewers
      * @param string|null $title
      * @param string|null $description
      * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
      * @param bool $draft Open the pull request as a draft.
-     * @return void
      *
      * @throws \Exception
      */
-    private function bulkCreate($toBranches, $fromBranch, $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null, $draft = false)
+    private function bulkCreate(array $toBranches, $fromBranch, bool $addDefaultReviewers = true, $title = null, $description = null, $reviewers = null, bool $draft = false): void
     {
         $responses = [];
 
@@ -394,28 +373,22 @@ class Pr extends Base
      * which returns bare account objects. If it is unavailable, fall back to
      * the repository-only endpoint.
      *
-     * @return array
-     *
      * @throws \Exception
      */
-    private function defaultReviewers()
+    private function defaultReviewers(): array
     {
         $currentUserUuid = $this->currentUserUuid();
 
         try {
             $response = $this->makeRequest('GET', '/effective-default-reviewers', [], true, 'fetching default reviewers');
-            $reviewers = array_map(function ($reviewer) {
-                return array_get($reviewer, 'user', []);
-            }, $response['values'] ?? []);
-        } catch (\Exception $e) {
+            $reviewers = array_map(fn($reviewer) => array_get($reviewer, 'user', []), $response['values'] ?? []);
+        } catch (\Exception) {
             $response = $this->makeRequest('GET', '/default-reviewers', [], true, 'fetching default reviewers');
             $reviewers = $response['values'] ?? [];
         }
 
         // remove current user from reviewers
-        return array_values(array_filter($reviewers, function ($reviewer) use ($currentUserUuid) {
-            return !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid;
-        }));
+        return array_values(array_filter($reviewers, fn($reviewer): bool => !empty($reviewer['uuid']) && $reviewer['uuid'] !== $currentUserUuid));
     }
 
     /**
@@ -455,11 +428,10 @@ class Pr extends Base
      * API, so it can't be used here.
      *
      * @param string $branch
-     * @return string|null
      *
      * @throws \Exception
      */
-    private function pullRequestTemplate($branch)
+    private function pullRequestTemplate($branch): ?string
     {
         // A 404 means an unpushed branch or no template; either way there is
         // nothing to use, and creating the pull request reports the former.
@@ -489,11 +461,9 @@ class Pr extends Base
      * the repository setting wins, then the project's, otherwise false. Only
      * a failure reading the project's settings falls back to false.
      *
-     * @return bool
-     *
      * @throws \Exception
      */
-    private function defaultCloseSourceBranch()
+    private function defaultCloseSourceBranch(): bool
     {
         $setting = array_get(
             $this->makeRequest('GET', '/branching-model/settings', [], true, 'fetching branching model settings'),
@@ -511,7 +481,7 @@ class Pr extends Base
                     $this->makeRequest('GET', "/workspaces/{$workspace}/projects/{$projectKey}/branching-model/settings", [], false, 'fetching project branching model settings'),
                     'default_branch_deletion'
                 );
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 $setting = null;
             }
         }
@@ -548,11 +518,10 @@ class Pr extends Base
      * workspace members.
      *
      * @param string $namesCsv
-     * @return array
      *
      * @throws \Exception
      */
-    private function resolveReviewers($namesCsv)
+    private function resolveReviewers($namesCsv): array
     {
         $uuidPattern = '/^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?$/i';
         $reviewers = [];
@@ -578,7 +547,7 @@ class Pr extends Base
             try {
                 $response = $this->makeRequest('GET', "/workspaces/{$workspace}/members?q={$query}", [], false, "resolving reviewer '{$entry}'");
             } catch (\Exception $e) {
-                throw new \Exception("Could not resolve reviewer '{$entry}': {$e->getMessage()}", 1);
+                throw new \Exception("Could not resolve reviewer '{$entry}': {$e->getMessage()}", 1, $e);
             }
 
             $uuid = array_get($response, 'values.0.user.uuid');
@@ -601,11 +570,10 @@ class Pr extends Base
      * untouched.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function edit($prNumber)
+    public function edit($prNumber): void
     {
         $title = $GLOBALS['bb_cli_pr_title'] ?? null;
         $description = $GLOBALS['bb_cli_pr_description'] ?? null;
@@ -613,7 +581,7 @@ class Pr extends Base
         $reviewers = $GLOBALS['bb_cli_pr_reviewers'] ?? null;
 
         if (!empty($GLOBALS['bb_cli_interactive'])) {
-            list($title, $description, $destination, $reviewers) = $this->promptForEditFields(
+            [$title, $description, $destination, $reviewers] = $this->promptForEditFields(
                 $prNumber,
                 $title,
                 $description,
@@ -624,7 +592,7 @@ class Pr extends Base
 
         $payload = $this->buildEditPayload($title, $description, $destination, $reviewers);
 
-        if (empty($payload)) {
+        if ($payload === []) {
             throw new \Exception('No changes provided. Use --title, --description, --destination, --reviewers, or -i.', 1);
         }
 
@@ -646,11 +614,10 @@ class Pr extends Base
      * request that is already ready is a harmless no-op.
      *
      * @param int $prNumber
-     * @return void
      *
      * @throws \Exception
      */
-    public function ready($prNumber)
+    public function ready($prNumber): void
     {
         $response = $this->makeRequest(
             'PUT',
@@ -675,11 +642,10 @@ class Pr extends Base
      * @param string|null $description
      * @param string|null $destination
      * @param string|null $reviewers Comma-separated nicknames and/or UUIDs.
-     * @return array
      *
      * @throws \Exception
      */
-    private function buildEditPayload($title, $description, $destination, $reviewers)
+    private function buildEditPayload($title, $description, $destination, $reviewers): array
     {
         $payload = [];
 
@@ -714,7 +680,7 @@ class Pr extends Base
      *
      * @throws \Exception
      */
-    private function promptForEditFields($prNumber, $title, $description, $destination, $reviewers)
+    private function promptForEditFields($prNumber, $title, $description, $destination, $reviewers): array
     {
         if (!is_null($title) && !is_null($description) && !is_null($destination) && !is_null($reviewers)) {
             return [$title, $description, $destination, $reviewers];
@@ -727,9 +693,7 @@ class Pr extends Base
             $title = getUserInput("New title (current: \"{$currentTitle}\"), leave empty to keep:") ?: null;
         }
 
-        if (is_null($description)) {
-            $description = getUserInput('New description, leave empty to keep:') ?: null;
-        }
+        $description ??= getUserInput('New description, leave empty to keep:') ?: null;
 
         if (is_null($destination)) {
             $currentDestination = array_get($current, 'destination.branch.name', '');
@@ -737,9 +701,7 @@ class Pr extends Base
         }
 
         if (is_null($reviewers)) {
-            $currentReviewers = implode(', ', array_map(function ($reviewer) {
-                return array_get($reviewer, 'nickname') ?: array_get($reviewer, 'display_name', '');
-            }, array_get($current, 'reviewers', [])));
+            $currentReviewers = implode(', ', array_map(fn($reviewer) => array_get($reviewer, 'nickname') ?: array_get($reviewer, 'display_name', ''), array_get($current, 'reviewers', [])));
             $reviewers = getUserInput("New reviewers (current: {$currentReviewers}), comma separated, leave empty to keep:") ?: null;
         }
 
@@ -753,11 +715,10 @@ class Pr extends Base
      *
      * @param int $prId
      * @param bool $unresolved
-     * @return void
      */
-    public function show($prId = null, $unresolved = false)
+    public function show($prId = null, $unresolved = false): void
     {
-        (new PrDetails())->show($prId, $unresolved);
+        new PrDetails()->show($prId, $unresolved);
     }
 
     /**
@@ -771,11 +732,10 @@ class Pr extends Base
      *
      * @param int $prNumber
      * @param string ...$messageParts
-     * @return void
      *
      * @throws \Exception
      */
-    public function comment($prNumber, ...$messageParts)
+    public function comment($prNumber, ...$messageParts): void
     {
         $message = implode(' ', $messageParts);
         if ($message === '-') {
@@ -816,11 +776,10 @@ class Pr extends Base
      * @param string|null $file
      * @param string|null $line
      * @param string|null $replyTo
-     * @return array
      *
      * @throws \Exception
      */
-    private function commentPlacement($file, $line, $replyTo)
+    private function commentPlacement($file, $line, $replyTo): array
     {
         if (!is_null($replyTo)) {
             if (!is_null($file) || !is_null($line)) {
@@ -843,12 +802,10 @@ class Pr extends Base
 
     /**
      * @param string $value
-     * @param string $flag
-     * @return int
      *
      * @throws \Exception
      */
-    private function positiveInteger($value, $flag)
+    private function positiveInteger($value, string $flag): int
     {
         if (!ctype_digit((string) $value) || (int) $value < 1) {
             throw new \Exception("{$flag} must be a positive whole number, got \"{$value}\".", 1);
@@ -859,10 +816,8 @@ class Pr extends Base
 
     /**
      * Read a comment message piped to stdin.
-     *
-     * @return string
      */
-    protected function readStdin()
+    protected function readStdin(): string
     {
         return (string) stream_get_contents(STDIN);
     }

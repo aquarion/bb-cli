@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BBCli\BBCli\Tests\Unit;
 
 use BBCli\BBCli\Tests\TestCase;

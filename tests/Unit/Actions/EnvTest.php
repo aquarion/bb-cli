@@ -20,7 +20,7 @@ class EnvTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->environments();
         });
 
@@ -51,7 +51,7 @@ class EnvTest extends ActionTestCase
                 ],
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->variables('{env-1}');
         });
 
@@ -86,7 +86,7 @@ class EnvTest extends ActionTestCase
                 'secured' => false,
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->createVariable('{env-1}', 'API_URL', 'https://api.test');
         });
 
@@ -105,7 +105,7 @@ class EnvTest extends ActionTestCase
             '/variables' => ['uuid' => '{v1}', 'key' => 'K', 'value' => 'V', 'secured' => true],
         ], $recorded);
 
-        $this->captureOutput(function () use ($action) {
+        $this->captureOutput(function () use ($action): void {
             // bin/bb hands every argument through as a string.
             $action->createVariable('{env-1}', 'K', 'V', '1');
         });
@@ -132,7 +132,7 @@ class EnvTest extends ActionTestCase
                 'secured' => true,
             ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->updateVariable('{env-1}', '{v1}', 'API_URL', 'https://new.test', true);
         });
 
@@ -154,5 +154,56 @@ class EnvTest extends ActionTestCase
         $this->assertSame(1, $result['exitCode']);
         $this->assertStringContainsString('Bad request', $this->stripAnsi($result['stdout']));
         $this->assertStringContainsString('key already exists', $this->stripAnsi($result['stdout']));
+    }
+
+    public function testVariableResponseReportsANonJsonBodyAndExits(): void
+    {
+        $result = $this->runPhp(<<<'PHP'
+            class HtmlEnv extends \BBCli\BBCli\Actions\Env {
+                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = []) {
+                    return '<html>Conflict</html>';
+                }
+            }
+            $GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+            (new HtmlEnv())->createVariable('{env-1}', 'K', 'V');
+        PHP);
+
+        $this->assertSame(1, $result['exitCode']);
+        $this->assertStringContainsString('Unexpected response from Bitbucket: <html>Conflict</html>', $this->stripAnsi($result['stdout']));
+    }
+
+    public function testVariableResponseSaysWhenTheBodyIsEmptyAndTruncatesLongOnes(): void
+    {
+        foreach (['false' => '(empty body)', "str_repeat('x', 500)" => str_repeat('x', 200).'...'] as $returned => $expected) {
+            $result = $this->runPhp(<<<PHP
+                class OddEnv extends \\BBCli\\BBCli\\Actions\\Env {
+                    public function makeRequest(\$method = 'GET', \$url = '', \$payload = [], \$isRepositoryUrl = true, \$operationLabel = null, \$expectedStatuses = []) {
+                        return $returned;
+                    }
+                }
+                \$GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+                (new OddEnv())->updateVariable('{env-1}', '{v1}', 'K', 'V');
+            PHP);
+
+            $this->assertSame(1, $result['exitCode']);
+            $this->assertStringContainsString('Unexpected response from Bitbucket: '.$expected, $this->stripAnsi($result['stdout']));
+        }
+    }
+
+    public function testVariableResponseToleratesAnErrorWithoutMessageOrDetail(): void
+    {
+        $result = $this->runPhp(<<<'PHP'
+            class BareErrorEnv extends \BBCli\BBCli\Actions\Env {
+                public function makeRequest($method = 'GET', $url = '', $payload = [], $isRepositoryUrl = true, $operationLabel = null, $expectedStatuses = []) {
+                    return ['error' => ['code' => 409]];
+                }
+            }
+            $GLOBALS['bb_cli_project_url'] = 'acme/widgets';
+            (new BareErrorEnv())->createVariable('{env-1}', 'K', 'V');
+        PHP);
+
+        $this->assertSame(1, $result['exitCode']);
+        $this->assertStringContainsString('Bitbucket returned an error.', $this->stripAnsi($result['stdout']));
+        $this->assertStringNotContainsString('Warning', $result['stdout']);
     }
 }

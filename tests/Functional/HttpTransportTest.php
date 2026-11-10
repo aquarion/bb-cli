@@ -17,11 +17,9 @@ class HttpTransportTest extends TestCase
     /** @var resource|null */
     private static $server;
 
-    /** @var string */
-    private static $baseUrl;
+    private static string $baseUrl;
 
-    /** @var string|null */
-    private static $docroot;
+    private static ?string $docroot = null;
 
     public static function setUpBeforeClass(): void
     {
@@ -85,7 +83,6 @@ class HttpTransportTest extends TestCase
         $base = new Base();
 
         $reflection = new \ReflectionMethod($base, 'executeRequest');
-        $reflection->setAccessible(true);
 
         return $reflection->invoke($base, $method, self::$baseUrl.$path, $payload);
     }
@@ -182,7 +179,6 @@ class HttpTransportTest extends TestCase
         // Port 1 on loopback refuses connections.
         $base = new Base();
         $reflection = new \ReflectionMethod($base, 'executeRequest');
-        $reflection->setAccessible(true);
 
         $response = $reflection->invoke($base, 'GET', 'http://127.0.0.1:1/nope', []);
 
@@ -196,7 +192,7 @@ class HttpTransportTest extends TestCase
         $base = new class extends Base {
             public $lastUrl;
 
-            protected function executeRequest($method, $url, $payload = [])
+            protected function executeRequest($method, $url, $payload = []): array
             {
                 // Route the api base url at the local test server.
                 $this->lastUrl = str_replace(Base::API_BASE_URL, HttpTransportTest::baseUrl(), $url);
@@ -257,30 +253,30 @@ class HttpTransportTest extends TestCase
 
     private static function routerSource(): string
     {
-        return <<<'PHP'
+        return <<<'PHP_WRAP'
         <?php
-
+        
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
+        
         if ($path === '/ping') {
             echo 'pong';
-
+        
             return true;
         }
-
+        
         if ($path === '/redirect') {
             header('Location: /echo', true, 302);
-
+        
             return true;
         }
-
+        
         if (preg_match('#^/status/(\d+)$#', $path, $matches)) {
             http_response_code((int) $matches[1]);
             echo json_encode(['type' => 'error', 'error' => ['message' => 'nope']]);
-
+        
             return true;
         }
-
+        
         $headers = [];
         foreach ($_SERVER as $key => $value) {
             if (strpos($key, 'HTTP_') === 0) {
@@ -290,7 +286,7 @@ class HttpTransportTest extends TestCase
         if (isset($_SERVER['CONTENT_TYPE'])) {
             $headers['content-type'] = $_SERVER['CONTENT_TYPE'];
         }
-
+        
         header('Content-Type: application/json');
         echo json_encode([
             'method' => $_SERVER['REQUEST_METHOD'],
@@ -298,8 +294,8 @@ class HttpTransportTest extends TestCase
             'headers' => $headers,
             'body' => file_get_contents('php://input'),
         ]);
-
+        
         return true;
-        PHP;
+        PHP_WRAP;
     }
 }

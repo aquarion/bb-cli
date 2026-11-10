@@ -52,7 +52,7 @@ class BranchTest extends ActionTestCase
                 ['name' => 'main', 'display_name' => 'Ada Lovelace', 'date' => '2024-03-01T12:34:56+00:00'],
             ]));
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -70,7 +70,7 @@ class BranchTest extends ActionTestCase
             ]),
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 
@@ -158,7 +158,7 @@ class BranchTest extends ActionTestCase
             ]),
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->user('grace');
         });
 
@@ -175,7 +175,7 @@ class BranchTest extends ActionTestCase
             ]),
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->name('release');
         });
 
@@ -189,7 +189,7 @@ class BranchTest extends ActionTestCase
             '/refs/branches' => ['values' => []],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->list();
         });
 

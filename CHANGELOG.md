@@ -44,10 +44,15 @@ All notable changes to this project will be documented in this file.
   answers, so they can be passed to `bb pr comment --reply-to`.
 - A PHPUnit test suite covering the helpers, `Base`, every action class, the
   `bin/bb` command line, the curl transport and the phar build, plus a
-  `Tests` GitHub Actions workflow running it on PHP 8.2, 8.3, 8.4 and 8.5.
+  `Tests` GitHub Actions workflow running it on PHP 8.4 and 8.5.
   Run it with `composer install && composer test`.
 
 ### Fix
+- `bb pipeline list` now stops with an explanation when a double-quoted
+  pipeline name isn't valid UTF-8, instead of silently leaving it out.
+- Setting an environment variable no longer prints a broken table or PHP
+  warnings when Bitbucket returns an empty or non-JSON body, or an error
+  without a message; it reports the problem and exits with status 1.
 - `create-phar.php` no longer walks the whole build checkout. It listed the
   files to ship with a directory walk filtered by a regex that matched any
   path containing "src", "config" or "phar-index.php", which pulled
@@ -71,10 +76,12 @@ All notable changes to this project will be documented in this file.
   leaving it off. The API doesn't apply this default itself.
 
 ### Remove
-- Support for PHP versions before 8.2. PHP 7 is long past end of life, and
-  8.2 is the oldest version the test suite runs on. `bb` now checks the
-  version before loading anything else, so an older PHP gets a clear message
-  rather than a parse error.
+- Support for PHP versions before 8.4. The minimum is now PHP 8.4, and the
+  code uses its syntax. `bb` checks the version before loading anything else,
+  so an older PHP gets a clear message rather than a parse error. The last
+  version for PHP older than 8.4 is tagged
+  [`final-php7`](https://github.com/aquarion/bb-cli/tree/final-php7); it
+  doesn't include later changes.
 - Legacy Bitbucket App Password authentication support, now that Bitbucket
   has fully retired app passwords (July 28, 2026). A config containing only
   `username`/`appPassword` now fails with a clear error directing users to

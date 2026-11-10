@@ -24,7 +24,7 @@ function getUserInput($question, $default = null)
         return array_shift($GLOBALS['bb_cli_test_input']);
     }
 
-    return is_null($default) ? '' : $default;
+    return $default ?? '';
 }
 
 /**

@@ -16,7 +16,7 @@ class RecordingBase extends Base
     public $requests = [];
 
     /** @var array<array{body: string|bool, status: int, error: string|null}> */
-    private $responses = [];
+    private array $responses = [];
 
     /**
      * Queues a raw response body and status for the next request.
@@ -48,7 +48,7 @@ class RecordingBase extends Base
         return $this->buildAuthHeader();
     }
 
-    protected function executeRequest($method, $url, $payload = [])
+    protected function executeRequest($method, $url, $payload = []): array
     {
         $this->requests[] = [
             'method' => $method,
@@ -57,7 +57,7 @@ class RecordingBase extends Base
             'authHeader' => $this->buildAuthHeader(),
         ];
 
-        if (empty($this->responses)) {
+        if ($this->responses === []) {
             throw new \RuntimeException("No queued response for {$method} {$url}");
         }
 

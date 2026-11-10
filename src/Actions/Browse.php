@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace BBCli\BBCli\Actions;
 
 use BBCli\BBCli\Base;
@@ -34,10 +36,9 @@ class Browse extends Base
     /**
      * Open browser for current repository
      *
-     * @return void
      * @throws \Exception
      */
-    public function browse()
+    public function browse(): void
     {
         $bitbucketUrl = 'https://bitbucket.org/'.getRepoPath();
 
@@ -62,10 +63,9 @@ class Browse extends Base
     /**
      * Prints repository url
      *
-     * @return void
      * @throws \Exception
      */
-    public function show()
+    public function show(): void
     {
         o('https://bitbucket.org/'.getRepoPath());
     }

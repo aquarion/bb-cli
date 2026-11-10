@@ -4,8 +4,8 @@
 // Checked before loading anything: the sources may use syntax an older PHP
 // can't parse, which would fail before this message could be shown. For the
 // same reason this file itself must stay parseable by old PHP versions.
-if (PHP_VERSION_ID < 80200) {
-    fwrite(STDERR, 'bb-cli needs PHP 8.2 or newer. This is PHP '.PHP_VERSION.'.'.PHP_EOL);
+if (PHP_VERSION_ID < 80400) {
+    fwrite(STDERR, 'bb-cli needs PHP 8.4 or newer. This is PHP '.PHP_VERSION.'.'.PHP_EOL);
     exit(1);
 }
 

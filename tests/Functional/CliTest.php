@@ -353,10 +353,10 @@ class CliTest extends TestCase
         // must run before the first require to be able to report anything.
         $entrypoint = file_get_contents(dirname(__DIR__, 2).'/bin/bb');
 
-        $check = strpos($entrypoint, 'PHP_VERSION_ID < 80200');
+        $check = strpos($entrypoint, 'PHP_VERSION_ID < 80400');
         $firstRequire = strpos($entrypoint, 'require');
 
-        $this->assertNotFalse($check, 'bin/bb should check for PHP 8.2.');
+        $this->assertNotFalse($check, 'bin/bb should check for PHP 8.4.');
         $this->assertLessThan($firstRequire, $check);
     }
 
@@ -364,6 +364,6 @@ class CliTest extends TestCase
     {
         $composer = json_decode(file_get_contents(dirname(__DIR__, 2).'/composer.json'), true);
 
-        $this->assertSame('>=8.2', $composer['require']['php']);
+        $this->assertSame('>=8.4', $composer['require']['php']);
     }
 }

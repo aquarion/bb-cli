@@ -17,7 +17,7 @@ file_put_contents(
     )
 );
 
-$baseDir = dirname(__FILE__);
+$baseDir = __DIR__;
 
 /**
  * The files to ship, keyed by their path inside the phar.

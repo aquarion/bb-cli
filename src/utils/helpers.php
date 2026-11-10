@@ -63,7 +63,7 @@ if (!function_exists('getRepoPath')) {
 }
 
 if (!function_exists('o')) {
-    function o($data, $color = 'white', $prefix = '', $end = "\033[0m".PHP_EOL)
+    function o($data, $color = 'white', $prefix = '', $end = "\033[0m".PHP_EOL): void
     {
         $colors = [
             'nocolor' => "\033[0m",
@@ -100,9 +100,7 @@ if (!function_exists('o')) {
 if (!function_exists('getUserInput')) {
     function getUserInput($question, $default = null)
     {
-        if (is_null($default)) {
-            $default = '';
-        }
+        $default ??= '';
 
         $input = readline($question.' '.$default);
 
@@ -157,7 +155,7 @@ if (!function_exists('format_relative_timestamp')) {
      * @param string $dateString ISO 8601 datetime string
      * @return string Formatted timestamp
      */
-    function format_relative_timestamp($dateString)
+    function format_relative_timestamp($dateString): string
     {
         $date = new \DateTime($dateString);
         $now = new \DateTime();
@@ -167,17 +165,18 @@ if (!function_exists('format_relative_timestamp')) {
         if ($diff->invert === 0) {
             return $date->format('M d, Y');
         }
-
         // Past timestamps - use relative time
         // Use total days ($diff->days), not day component ($diff->d)
         if ($diff->days > 7) {
             return $date->format('M d, Y');
-        } elseif ($diff->days > 0) {
-            return $diff->days . ' day' . ($diff->days > 1 ? 's' : '') . ' ago';
-        } elseif ($diff->h > 0) {
-            return $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
-        } else {
-            return $diff->i . ' minute' . ($diff->i > 1 ? 's' : '') . ' ago';
         }
+        if ($diff->days > 0) {
+            return $diff->days . ' day' . ($diff->days > 1 ? 's' : '') . ' ago';
+        }
+
+        if ($diff->h > 0) {
+            return $diff->h . ' hour' . ($diff->h > 1 ? 's' : '') . ' ago';
+        }
+        return $diff->i . ' minute' . ($diff->i > 1 ? 's' : '') . ' ago';
     }
 }

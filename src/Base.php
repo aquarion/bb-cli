@@ -121,10 +121,8 @@ class Base
      *
      * An OAuth token is sent as a Bearer token; otherwise the API token is
      * sent as HTTP Basic auth in the "email:apiToken" form Bitbucket expects.
-     *
-     * @return string
      */
-    protected function buildAuthHeader()
+    protected function buildAuthHeader(): string
     {
         if (userConfig('auth.oauthToken')) {
             return 'Authorization: Bearer '.userConfig('auth.oauthToken');
@@ -143,7 +141,7 @@ class Base
      * @param  array  $payload
      * @return array  ['body' => string|bool, 'status' => int, 'error' => string|null]
      */
-    protected function executeRequest($method, $url, $payload = [])
+    protected function executeRequest($method, $url, $payload = []): array
     {
         // Normalise once, so the no-body-on-GET rule below cannot disagree with
         // the method curl is actually asked to send.
@@ -166,9 +164,7 @@ class Base
 
         $body = curl_exec($ch);
         $error = curl_errno($ch) ? curl_error($ch) : null;
-        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        curl_close($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         return [
             'body' => $body,
@@ -186,7 +182,7 @@ class Base
     public function getMethodNameFromAlias($alias)
     {
         foreach (static::AVAILABLE_COMMANDS as $method => $methodAliases) {
-            $methodAliases = array_map('trim', explode(', ', $methodAliases));
+            $methodAliases = array_map(trim(...), explode(', ', $methodAliases));
 
             if (in_array($alias, $methodAliases)) {
                 return $method;
@@ -198,14 +194,10 @@ class Base
 
     /**
      * Lists available commands in shell autocomplete format.
-     *
-     * @return void
      */
-    public function listCommandsForAutocomplete()
+    public function listCommandsForAutocomplete(): void
     {
-        $commands = array_map(function($aliases) {
-            return trim(explode(',', $aliases)[0]);
-        }, static::AVAILABLE_COMMANDS);
+        $commands = array_map(fn($aliases): string => trim(explode(',', $aliases)[0]), static::AVAILABLE_COMMANDS);
 
         sort($commands);
 

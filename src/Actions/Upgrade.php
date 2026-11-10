@@ -25,10 +25,8 @@ class Upgrade extends Base
 
     /**
      * Upgrade.
-     *
-     * @return void
      */
-    public function index()
+    public function index(): void
     {
         $repo = $this->fetchLatestRelease();
 
@@ -59,7 +57,7 @@ class Upgrade extends Base
      *
      * @return object
      */
-    protected function fetchLatestRelease()
+    protected function fetchLatestRelease(): mixed
     {
         return json_decode(
             $this->fetchRemote('https://api.github.com/repos/bb-cli/bb-cli/releases/latest')
@@ -70,9 +68,8 @@ class Upgrade extends Base
      * Fetch a remote url with the bb-cli user agent.
      *
      * @param  string $url
-     * @return string|false
      */
-    protected function fetchRemote($url)
+    protected function fetchRemote($url): string|false
     {
         $context = stream_context_create([
             'http' => [
@@ -87,10 +84,8 @@ class Upgrade extends Base
 
     /**
      * Path of the phar currently being executed.
-     *
-     * @return string
      */
-    protected function runningFile()
+    protected function runningFile(): string
     {
         return \Phar::running(false);
     }

@@ -38,9 +38,8 @@ class Branch extends Base
      * List branches that latest commit username contains "xyz".
      *
      * @param  string $user
-     * @return void
      */
-    public function user($user)
+    public function user($user): void
     {
         $this->list($user);
     }
@@ -49,9 +48,8 @@ class Branch extends Base
      * List branches that branch name contains "feature".
      *
      * @param  string $branchName
-     * @return void
      */
-    public function name($branchName)
+    public function name($branchName): void
     {
         $this->list(null, $branchName);
     }
@@ -63,10 +61,10 @@ class Branch extends Base
      * @param  string $branch
      * @param  int    $page
      * @param  bool   $return
-     * @return array|void
+     * @return mixed[]|null
      * @throws \Exception
      */
-    public function list($user = null, $branch = null, $page = 1, $return = false)
+    public function list($user = null, $branch = null, $page = 1, $return = false): ?array
     {
         $result = [];
 
@@ -77,11 +75,11 @@ class Branch extends Base
             $branchOwner = array_get($branchInfo, 'target.author.user.display_name') ?:
                 array_get($branchInfo, 'target.author.raw');
 
-            if ($user && strpos(mb_strtolower($branchOwner), mb_strtolower($user)) === false) {
+            if ($user && !str_contains(mb_strtolower($branchOwner), mb_strtolower($user))) {
                 continue;
             }
 
-            if ($branch && strpos(mb_strtolower($branchName), mb_strtolower($branch)) === false) {
+            if ($branch && !str_contains(mb_strtolower($branchName), mb_strtolower($branch))) {
                 continue;
             }
 
@@ -101,5 +99,6 @@ class Branch extends Base
         }
 
         o($result, 'yellow');
+        return null;
     }
 }

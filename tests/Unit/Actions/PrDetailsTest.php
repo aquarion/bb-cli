@@ -60,7 +60,7 @@ class PrDetailsTest extends ActionTestCase
         $recorded = [];
         $action = $this->routing(['/comments' => ['values' => []]], $recorded, $pullRequest);
 
-        return $this->lines($this->captureOutput(function () use ($action) {
+        return $this->lines($this->captureOutput(function () use ($action): void {
             $action->show(7);
         }));
     }
@@ -70,11 +70,11 @@ class PrDetailsTest extends ActionTestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('PR ID required. Usage: bb pr show <pr_id> [unresolved]');
 
-        (new PrDetails())->show(null);
+        new PrDetails()->show();
     }
 
     #[DataProvider('unresolvedFlagProvider')]
-    public function testAcceptsBooleanishUnresolvedArguments($flag, bool $expectFiltered): void
+    public function testAcceptsBooleanishUnresolvedArguments(bool|string $flag, bool $expectFiltered): void
     {
         $action = $this->routing([
             '/comments' => [
@@ -87,12 +87,12 @@ class PrDetailsTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action, $flag) {
+        $output = $this->captureOutput(function () use ($action, $flag): void {
             $action->show(7, $flag);
         });
 
         $this->assertStringContainsString('open', $output);
-        $this->assertSame(!$expectFiltered, strpos($output, 'done') !== false);
+        $this->assertSame(!$expectFiltered, str_contains($output, 'done'));
     }
 
     public static function unresolvedFlagProvider(): array
@@ -113,7 +113,7 @@ class PrDetailsTest extends ActionTestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Invalid unresolved value. Usage: bb pr show <pr_id> [unresolved]');
 
-        (new PrDetails())->show(7, 'maybe');
+        new PrDetails()->show(7, 'maybe');
     }
 
     public function testSeparatesGeneralAndInlineComments(): void
@@ -130,7 +130,7 @@ class PrDetailsTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -148,7 +148,7 @@ class PrDetailsTest extends ActionTestCase
     {
         $action = $this->routing(['/comments' => ['values' => []]]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -168,7 +168,7 @@ class PrDetailsTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -189,13 +189,11 @@ class PrDetailsTest extends ActionTestCase
             ],
         ], $recorded);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
-        $comments = array_values(array_filter($recorded, function ($request) {
-            return strpos($request['url'], '/comments') !== false;
-        }));
+        $comments = array_values(array_filter($recorded, fn(array $request): bool => str_contains($request['url'], '/comments')));
 
         $this->assertCount(2, $comments);
         $this->assertSame('/pullrequests/7/comments?pagelen=100&page=1', $comments[0]['url']);
@@ -218,7 +216,7 @@ class PrDetailsTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7, true);
         });
 
@@ -306,7 +304,7 @@ class PrDetailsTest extends ActionTestCase
             ],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -318,7 +316,7 @@ class PrDetailsTest extends ActionTestCase
     {
         $action = $this->routing(['/comments' => []]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -336,13 +334,13 @@ class PrDetailsTest extends ActionTestCase
 
     public function testCommentTimestampsAreShownAsRelativeTime(): void
     {
-        $twoHoursAgo = (new \DateTime())->modify('-2 hours')->format(\DateTime::ATOM);
+        $twoHoursAgo = new \DateTime()->modify('-2 hours')->format(\DateTime::ATOM);
 
         $action = $this->routing([
             '/comments' => ['values' => [$this->comment('Ada', 'recent', $twoHoursAgo)]],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -351,7 +349,7 @@ class PrDetailsTest extends ActionTestCase
 
     public function testCommentHeadingsShowIdsAndWhatARepliesTo(): void
     {
-        $twoHoursAgo = (new \DateTime())->modify('-2 hours')->format(\DateTime::ATOM);
+        $twoHoursAgo = new \DateTime()->modify('-2 hours')->format(\DateTime::ATOM);
 
         $action = $this->routing([
             '/comments' => ['values' => [
@@ -361,7 +359,7 @@ class PrDetailsTest extends ActionTestCase
             ]],
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
 
@@ -377,7 +375,7 @@ class PrDetailsTest extends ActionTestCase
             'description' => "Does the thing.\nSecond line.",
         ]);
 
-        $output = $this->captureOutput(function () use ($action) {
+        $output = $this->captureOutput(function () use ($action): void {
             $action->show(7);
         });
         $lines = $this->lines($output);

@@ -8,8 +8,7 @@ use BBCli\BBCli\Tests\TestCase;
 
 class BaseMakeRequestTest extends TestCase
 {
-    /** @var RecordingBase */
-    private $base;
+    private \BBCli\BBCli\Tests\Support\RecordingBase $base;
 
     protected function setUp(): void
     {
@@ -170,7 +169,7 @@ class BaseMakeRequestTest extends TestCase
         $output = '';
 
         try {
-            $output = $this->captureOutput(function () {
+            $output = $this->captureOutput(function (): void {
                 $this->base->makeRequest('GET', '/x');
             });
             $this->fail('Expected an exception for a 500 response.');
