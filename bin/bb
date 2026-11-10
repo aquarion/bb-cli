@@ -69,11 +69,14 @@ $prDescription = null;
 $prDestination = null;
 $prReviewers = null;
 $draft = false;
-$commentFile = null;
-$commentLine = null;
-$commentReplyTo = null;
-$pipelineBranch = null;
-$pipelineLimit = null;
+// Flags that carry a value straight into a global read by the actions.
+$valueFlagGlobals = [
+    '--file' => 'bb_cli_pr_comment_file',
+    '--line' => 'bb_cli_pr_comment_line',
+    '--reply-to' => 'bb_cli_pr_comment_reply_to',
+    '--branch' => 'bb_cli_pipeline_branch',
+    '--limit' => 'bb_cli_pipeline_limit',
+];
 $interactive = false;
 $filteredArgv = [];
 for ($i = 0; $i < count($argv); $i++) {
@@ -94,20 +97,8 @@ for ($i = 0; $i < count($argv); $i++) {
         $i++;
     } elseif ($argv[$i] === '--draft') {
         $draft = true;
-    } elseif ($argv[$i] === '--file' && isset($argv[$i + 1])) {
-        $commentFile = $argv[$i + 1];
-        $i++;
-    } elseif ($argv[$i] === '--line' && isset($argv[$i + 1])) {
-        $commentLine = $argv[$i + 1];
-        $i++;
-    } elseif ($argv[$i] === '--reply-to' && isset($argv[$i + 1])) {
-        $commentReplyTo = $argv[$i + 1];
-        $i++;
-    } elseif ($argv[$i] === '--branch' && isset($argv[$i + 1])) {
-        $pipelineBranch = $argv[$i + 1];
-        $i++;
-    } elseif ($argv[$i] === '--limit' && isset($argv[$i + 1])) {
-        $pipelineLimit = $argv[$i + 1];
+    } elseif (isset($valueFlagGlobals[$argv[$i]], $argv[$i + 1])) {
+        $GLOBALS[$valueFlagGlobals[$argv[$i]]] = $argv[$i + 1];
         $i++;
     } elseif ($argv[$i] === '-i' || $argv[$i] === '--interactive') {
         $interactive = true;
@@ -140,25 +131,6 @@ if ($draft) {
 }
 if ($interactive) {
     $GLOBALS['bb_cli_interactive'] = true;
-}
-
-// Set global pipeline filters for use in Pipeline::list() and Pipeline::recent()
-if (!is_null($pipelineBranch)) {
-    $GLOBALS['bb_cli_pipeline_branch'] = $pipelineBranch;
-}
-if (!is_null($pipelineLimit)) {
-    $GLOBALS['bb_cli_pipeline_limit'] = $pipelineLimit;
-}
-
-// Set global comment placement for use in Pr::comment()
-if (!is_null($commentFile)) {
-    $GLOBALS['bb_cli_pr_comment_file'] = $commentFile;
-}
-if (!is_null($commentLine)) {
-    $GLOBALS['bb_cli_pr_comment_line'] = $commentLine;
-}
-if (!is_null($commentReplyTo)) {
-    $GLOBALS['bb_cli_pr_comment_reply_to'] = $commentReplyTo;
 }
 
 $userBaseAction = $argv[1] ?? null;

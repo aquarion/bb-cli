@@ -56,6 +56,14 @@ class GetRepoPathTest extends TestCase
         $this->assertSame('acme/widgets', getRepoPath());
     }
 
+    public function testReadsRepoPathFromAnOriginWithoutTheGitSuffix(): void
+    {
+        $repo = $this->makeGitRepo('https://bitbucket.org/acme/widgets');
+        chdir($repo);
+
+        $this->assertSame('acme/widgets', getRepoPath());
+    }
+
     public function testFailsWhenTheOriginIsNotABitbucketRepository(): void
     {
         $repo = $this->makeGitRepo('git@github.com:acme/widgets.git');

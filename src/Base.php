@@ -69,8 +69,8 @@ class Base
         $response = $this->executeRequest($method, self::API_BASE_URL.$url, $payload);
 
         if ($response['error'] !== null) {
-            o('Error:' . $response['error']);
-            die;
+            o('Error:' . $response['error'], 'red');
+            exit(1);
         }
 
         $result = $response['body'];
@@ -237,5 +237,18 @@ class Base
         }
         o('Run "bb auth" to configure an API token.', 'yellow');
         exit(1);
+    }
+
+    private mixed $repository = null;
+
+    /**
+     * The repository resource, fetched once per action.
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function repository()
+    {
+        return $this->repository ??= $this->makeRequest('GET', '', [], true, 'fetching repository');
     }
 }
